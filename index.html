@@ -1,0 +1,3628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Qhyd 流量计算与喷雾仿真系统 v9 · 正视角与 MP4 导出</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#0f1829">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Qhyd & Spray">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg: #f4f6f9; --wrap: #ffffff; --panel: #fafbfc; --border: #e1e4e8;
+            --text: #333333; --muted: #666666; --title: #2c3e50;
+            --input-bg: #ffffff; --input-border: #ccd1d9; --accent: #3498db;
+            --card: #ffffff; --badge-bg: #f8f9fa; --check-bg: #e8f8f5;
+            --kpi-bg: #eaf4fb; --kpi-border: #aed6f1; --kpi-num: #1a6fa8;
+            --warn-bg: #fef5e7; --warn-border: #f5cba7; --warn-text: #a04000;
+            --ok-bg: #eafaf1; --ok-border: #a9dfbf; --ok-text: #1e8449;
+            --err-bg: #fdedec; --err-border: #f5b7b1; --err-text: #922b21;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        body.dark {
+            --bg: #080e1a; --wrap: #0f1829; --panel: #142036; --border: #24344f;
+            --text: #d6e2f0; --muted: #8fa3bf; --title: #e8f1fb;
+            --input-bg: #0c1525; --input-border: #2c4062; --accent: #22d3ee;
+            --card: #101b2f; --badge-bg: #0c1525; --check-bg: #0f2a35;
+            --kpi-bg: #0c1a2e; --kpi-border: #1f4a66; --kpi-num: #22d3ee;
+            --warn-bg: #2b2210; --warn-border: #6b5217; --warn-text: #fbbf24;
+            --ok-bg: #0e2a22; --ok-border: #1d6b50; --ok-text: #34d399;
+            --err-bg: #2d1518; --err-border: #7a2a31; --err-text: #fb7185;
+            --shadow: 0 0 0 1px #24344f, 0 12px 40px rgba(0,0,0,0.55), 0 0 70px rgba(34,211,238,0.07);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 20px; background-color: var(--bg); color: var(--text); transition: background-color .3s, color .3s; }
+        body.dark { background-image: radial-gradient(1100px 560px at 15% -10%, #12284a 0%, transparent 60%), radial-gradient(900px 480px at 100% 0%, #0b3a48 0%, transparent 55%); background-attachment: fixed; }
+        .wrapper { max-width: 1200px; margin: 0 auto; background: var(--wrap); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); transition: background-color .3s; }
+        h2 { text-align: center; color: var(--title); margin-bottom: 30px; letter-spacing: 1px; }
+        body.dark h2 { background: linear-gradient(90deg, #22d3ee, #a78bfa 60%, #f472b6); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 25px; transition: background-color .3s, border-color .3s; }
+        .panel-title { font-size: 16px; font-weight: bold; color: var(--title); margin-bottom: 15px; border-left: 4px solid var(--accent); padding-left: 10px; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+        .control-group { display: flex; flex-direction: column; }
+        .control-group label { font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+        .control-group input, .control-group select { padding: 10px; border: 1px solid var(--input-border); border-radius: 6px; font-size: 14px; outline: none; background: var(--input-bg); color: var(--text); }
+        .control-group input:focus, .control-group select:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(52,152,219,0.15); }
+        body.dark .control-group input:focus, body.dark .control-group select:focus { box-shadow: 0 0 10px rgba(34,211,238,0.3); }
+        .control-group.wide { grid-column: span 2; }
+
+        /* 交互按钮样式 */
+        .action-container { text-align: center; margin: 25px 0; display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .btn { padding: 12px 25px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; border: none; transition: background .2s, box-shadow .2s, transform .1s; display: inline-flex; align-items: center; gap: 5px; }
+        .btn:active { transform: translateY(1px); }
+        body.dark .btn { box-shadow: 0 0 14px rgba(34,211,238,0.16); }
+        body.dark .btn:hover { box-shadow: 0 0 20px rgba(34,211,238,0.38); }
+        .calc-btn { background-color: #3498db; color: #fff; }
+        .calc-btn:hover { background-color: #2980b9; }
+        .save-btn { background-color: #2ecc71; color: #fff; }
+        .save-btn:hover { background-color: #27ae60; }
+        .merge-btn { background-color: #9b59b6; color: #fff; }
+        .merge-btn:hover { background-color: #8e44ad; }
+        .family-btn { background: linear-gradient(90deg, #ec4899, #8b5cf6); color: #fff; }
+        .family-btn:hover { filter: brightness(1.1); }
+        .clear-btn { background-color: #e74c3c; color: #fff; padding: 6px 15px; font-size: 13px; }
+        .clear-btn:hover { background-color: #c0392b; }
+        .export-btn { background-color: #f39c12; color: #fff; padding: 8px 18px; font-size: 13px; }
+        .export-btn:hover { background-color: #d35400; }
+        .excel-btn { background-color: #16a085; }
+        .excel-btn:hover { background-color: #12806b; }
+
+        .theme-toggle { position: fixed; right: 14px; top: 36px; z-index: 999; padding: 5px 12px; font-size: 12px; border-radius: 16px; cursor: pointer; border: 1px solid var(--border); background: var(--wrap); color: var(--text); transition: all .2s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+        body.dark .theme-toggle { box-shadow: 0 0 12px rgba(34,211,238,0.2); }
+
+        /* 提示条 */
+        .notice { display: none; margin-bottom: 14px; font-size: 13px; line-height: 1.7; border-radius: 6px; padding: 10px 14px; border: 1px solid; }
+        .notice.warn { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text); }
+        .notice.ok { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+        .notice.err { background: var(--err-bg); border-color: var(--err-border); color: var(--err-text); }
+        .hint-line { font-size: 12px; color: var(--muted); margin-top: 12px; }
+        .toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+
+        /* KPI + 仪表盘 */
+        .kpi-box { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; background: var(--kpi-bg); border: 1px solid var(--kpi-border); border-radius: 8px; padding: 14px 22px; }
+        body.dark .kpi-box { box-shadow: inset 0 0 30px rgba(34,211,238,0.06); }
+        .kpi-label { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+        .kpi-number { font-size: 44px; font-weight: 800; color: var(--kpi-num); letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+        body.dark .kpi-number { text-shadow: 0 0 18px rgba(34,211,238,0.55); }
+        .kpi-unit { font-size: 13px; color: var(--muted); margin-left: 10px; }
+        .gauge-wrap { width: 240px; text-align: center; }
+        .gauge-wrap svg { width: 100%; height: auto; display: block; }
+        .gauge-needle { transform-origin: 100px 100px; transform: rotate(0deg); transition: transform 0.9s cubic-bezier(.2,.8,.2,1); }
+        .gauge-needle line { stroke: var(--text); }
+        .gauge-hub { fill: var(--text); }
+        .gauge-txt { fill: var(--muted); font-size: 9px; }
+        .gauge-caption { font-size: 12px; color: var(--muted); margin-top: -2px; }
+
+        /* 画布与对比区布局 */
+        .main-chart-box { position: relative; height: 380px; margin-top: 10px; }
+        .workspace-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-left: 4px solid #2ecc71; padding-left: 10px; }
+        .workspace-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; margin-top: 15px; }
+
+        /* 单独保存的图表卡片 */
+        .saved-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; display: flex; flex-direction: column; justify-content: space-between; }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .checkbox-container { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: bold; color: var(--title); cursor: pointer; background: var(--check-bg); padding: 4px 8px; border-radius: 4px; }
+        .checkbox-container input { width: 16px; height: 16px; cursor: pointer; }
+        .param-badge { background-color: var(--badge-bg); border-left: 3px solid #16a085; padding: 8px; font-size: 12px; color: var(--muted); line-height: 1.5; border-radius: 0 4px 4px 0; width: 100%; margin-right: 10px; }
+        .saved-chart-box { position: relative; height: 260px; width: 100%; margin: 10px 0; }
+
+        /* 合并图表特定展示区 */
+        .merged-section { border: 2px dashed #9b59b6 !important; display: none; }
+        .merged-title { font-size: 16px; font-weight: bold; color: #9b59b6; border-left: 4px solid #9b59b6; padding-left: 10px; }
+        body.dark .merged-title { color: #c4a1ff; }
+        .merged-chart-box { position: relative; height: 500px; margin-top: 15px; }
+
+        .author-footer { position: fixed; right: 14px; top: 10px; font-size: 15px; color: #9aa3ad; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; letter-spacing: 0.2px; user-select: none; pointer-events: none; z-index: 999; }
+
+        /* ================= 顶部标签页 ================= */
+        .tab-bar { display: flex; gap: 10px; justify-content: center; margin: -8px 0 26px; flex-wrap: wrap; }
+        .tab-btn { padding: 10px 26px; font-size: 15px; font-weight: 700; border-radius: 22px; cursor: pointer; border: 1px solid var(--border); background: var(--panel); color: var(--muted); transition: all .2s; }
+        .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+        .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        body.dark .tab-btn.active { color: #03222b; box-shadow: 0 0 18px rgba(34,211,238,0.35); }
+
+        /* ================= 喷雾仿真页 ================= */
+        .sp-steps { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; font-size: 13px; }
+        .sp-pill { padding: 5px 16px; border-radius: 14px; border: 1px solid var(--border); color: var(--muted); background: var(--panel); }
+        .sp-pill.active { color: var(--accent); border-color: var(--accent); font-weight: 700; }
+        .sp-base { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+        .sp-base-item { background: var(--kpi-bg); border: 1px solid var(--kpi-border); border-radius: 8px; padding: 10px 14px; }
+        .sp-base-item .k { font-size: 12px; color: var(--muted); }
+        .sp-base-item .v { font-size: 20px; font-weight: 800; color: var(--kpi-num); font-variant-numeric: tabular-nums; }
+        .sp-base-item .u { font-size: 12px; color: var(--muted); margin-left: 4px; font-weight: 400; }
+        .sp-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .sp-card { margin-bottom: 0; }
+        .sp-card.A { border-top: 4px solid #0e7490; }
+        .sp-card.B { border-top: 4px solid #c2410c; }
+        .sp-card.A .panel-title { border-left-color: #0e7490; }
+        .sp-card.B .panel-title { border-left-color: #c2410c; }
+        .sp-fields { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 14px; }
+        .sp-range { font-weight: 400; opacity: .7; font-size: 11px; }
+        .sp-derived { margin-top: 14px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.75; white-space: pre-wrap; padding: 10px 12px; border-radius: 6px; border: 1px solid; }
+        .sp-derived.ok { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+        .sp-derived.err { background: var(--err-bg); border-color: var(--err-border); color: var(--err-text); }
+        .sp-flash { animation: spflash 1.4s ease-out; }
+        @keyframes spflash { 0% { box-shadow: 0 0 0 3px var(--accent); background: var(--kpi-bg); } 100% { box-shadow: 0 0 0 0 transparent; } }
+        .sp-nav { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 25px; }
+        .sp-nav .sp-spacer { flex: 1; }
+        .sp-nav .control-group { flex-direction: row; align-items: center; gap: 8px; }
+        .sp-nav .control-group label { margin: 0; white-space: nowrap; }
+        .btn-ghost { background: var(--panel); color: var(--text); border: 1px solid var(--border); }
+        .btn-ghost:hover { border-color: var(--accent); }
+        .btn[disabled] { opacity: .45; cursor: not-allowed; }
+        .sp-go { background: #10b981; color: #fff; font-size: 16px; padding: 14px 34px; }
+        .sp-go:hover { background: #059669; }
+
+        .sp-statusbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 20px; font-weight: 700; color: var(--title); padding: 14px 20px; }
+        .sp-statusbar .s-run { color: #10b981; } .sp-statusbar .s-pause { color: #f59e0b; }
+        .sp-statusbar .s-sub { font-weight: 400; color: var(--muted); font-size: 13px; }
+        .sp-view-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; padding: 12px 18px; }
+        .sp-vmode-group { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .sp-vmode-btn { padding: 7px 14px; font-size: 13px; font-weight: 700; border-radius: 18px; cursor: pointer; border: 1px solid var(--border); background: var(--panel); color: var(--muted); transition: all .2s; }
+        .sp-vmode-btn:hover { border-color: var(--accent); color: var(--text); }
+        .sp-vmode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+        body.dark .sp-vmode-btn.active { color: #03222b; box-shadow: 0 0 12px rgba(34,211,238,0.35); }
+        .sp-view { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+        .sp-canvas-pair { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .sp-canvas-pair.both { grid-template-columns: 1fr 1fr; gap: 10px; }
+        .sp-cv-box { position: relative; }
+        .sp-cv-tag { position: absolute; left: 8px; top: 8px; z-index: 2; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; background: rgba(15,23,42,0.82); color: #e2e8f0; border: 1px solid rgba(148,163,184,0.3); pointer-events: none; }
+        .sp-viewcol { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; min-width: 0; }
+        .sp-viewcol.A { border-top: 4px solid #0e7490; } .sp-viewcol.B { border-top: 4px solid #c2410c; }
+        .sp-info { font-size: 12px; line-height: 1.6; color: var(--muted); min-height: 4.9em; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+        .sp-info b { color: var(--title); }
+        .sp-info .tagA, .sp-info .tagB { display: inline-block; padding: 0 7px; border-radius: 4px; color: #fff; font-weight: 700; margin-right: 6px; }
+        .sp-info .tagA { background: #0e7490; } .sp-info .tagB { background: #c2410c; }
+        .sp-info .warn { color: var(--err-text); font-weight: 700; }
+        .sp-canvas { width: 100%; height: auto; aspect-ratio: 1 / 1; display: block; border-radius: 6px; background: #05090c; }
+        .sp-prog { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 12px; align-items: center; font-size: 12px; color: var(--muted); }
+        .sp-bar { height: 10px; border-radius: 5px; background: var(--border); overflow: hidden; }
+        .sp-bar > i { display: block; height: 100%; width: 0; transition: width .12s linear; }
+        .sp-bar.A > i { background: #0e7490; } .sp-bar.B > i { background: #c2410c; }
+        .sp-ctl { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: center; }
+        .sp-ctl + .sp-ctl { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); }
+        .sp-ctl .control-group { flex-direction: row; align-items: center; gap: 8px; }
+        .sp-ctl .control-group label { margin: 0; white-space: nowrap; }
+        .sp-ctl input[type=number], .sp-ctl select { padding: 7px 8px; width: 80px; }
+        .sp-ctl select { width: auto; }
+        .sp-ctl .btn { padding: 9px 16px; }
+        .sp-slider { flex: 1; min-width: 180px; accent-color: var(--accent); }
+        .sp-small { font-size: 12px; color: var(--muted); }
+        .sp-sep { width: 1px; height: 26px; background: var(--border); }
+        @media (max-width: 900px) { .sp-cards, .sp-view { grid-template-columns: 1fr; } .wrapper { padding: 18px; } }
+    </style>
+</head>
+<body>
+
+<button class="theme-toggle" id="pwaInstallBtn" style="right: 118px; display: none; border-color: var(--accent); color: var(--accent);" onclick="installPWA()">📲 安装应用</button>
+<button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">☀️ 切换浅色</button>
+
+<div class="wrapper">
+    <h2>油嘴流量计算与喷雾仿真工具</h2>
+
+    <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" id="tabbtn_flow" role="tab" onclick="switchTab('flow')">① 流量计算 (Qhyd)</button>
+        <button class="tab-btn" id="tabbtn_spray" role="tab" onclick="switchTab('spray')">② 喷雾仿真（俯视 / 正视）</button>
+        <button class="tab-btn" id="tabbtn_nozzle" role="tab" onclick="switchTab('nozzle')">③ 孔径 &amp; 流量系数</button>
+    </div>
+
+    <div id="tab_flow" class="tab-page">
+        <div class="panel">
+            <div class="panel-title">基准常数设定（未被扫描的参数将保持这些初始值）</div>
+            <div class="toolbar">
+                <button class="btn export-btn excel-btn" onclick="document.getElementById('excel_file').click()">📂 从 Excel 导入基准参数</button>
+                <input type="file" id="excel_file" accept=".xlsx,.xlsm,.xls" style="display:none" onchange="handleExcelImport(this)">
+                <span style="font-size:12px; color:var(--muted);">读取：B11 功率(kW)和转速(rpm) · B15 油耗 · B7 缸数(第2个数字) · B27 轨压</span>
+            </div>
+            <div id="excel_import_status" class="notice"></div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>BSFC油耗 (g/kWh)</label>
+                    <input type="number" id="base_M2" value="220.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Power功率 (kW)</label>
+                    <input type="number" id="base_M3" value="129.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Speed转速 A3/M4 (rpm)</label>
+                    <input type="number" id="base_M4" value="2400.0" step="1">
+                </div>
+                <div class="control-group">
+                    <label>缸数</label>
+                    <input type="number" id="base_M5" value="4.0" step="1">
+                </div>
+                <div class="control-group">
+                    <label>CA喷油持续期 (°CA)</label>
+                    <input type="number" id="base_B3" value="25.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>RailP轨压 (bar)</label>
+                    <input type="number" id="base_E3" value="1600.0" step="10">
+                </div>
+            </div>
+
+            <div class="kpi-box">
+                <div>
+                    <div class="kpi-label">基准参数对应的 Qhyd</div>
+                    <div><span id="base_qhyd_display" class="kpi-number">—</span><span class="kpi-unit">cm³ / 100bar / 30s</span></div>
+                </div>
+                <div class="gauge-wrap">
+                    <svg viewBox="0 0 200 124" aria-label="Qhyd 位置仪表盘">
+                        <defs>
+                            <linearGradient id="gaugeGrad" gradientUnits="userSpaceOnUse" x1="20" y1="0" x2="180" y2="0">
+                                <stop offset="0" stop-color="#3b82f6"/>
+                                <stop offset="0.25" stop-color="#06b6d4"/>
+                                <stop offset="0.5" stop-color="#10b981"/>
+                                <stop offset="0.75" stop-color="#f59e0b"/>
+                                <stop offset="1" stop-color="#ef4444"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round"/>
+                        <g class="gauge-needle" id="gauge_needle">
+                            <line x1="100" y1="100" x2="36" y2="100" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+                        <circle class="gauge-hub" cx="100" cy="100" r="7"/>
+                        <text class="gauge-txt" id="gauge_min" x="20" y="118" text-anchor="middle">—</text>
+                        <text class="gauge-txt" id="gauge_max" x="180" y="118" text-anchor="middle">—</text>
+                    </svg>
+                    <div class="gauge-caption" id="gauge_caption">基准点在当前扫描曲线值域中的位置</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">动态范围扫描（Sweep）配置</div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>选择扫描自变量（横坐标）</label>
+                    <select id="sweep_var" onchange="onSweepVarChange()">
+                        <option value="M2">BSFC油耗</option>
+                        <option value="M3">Power功率</option>
+                        <option value="M4">Speed转速（对Qhyd无影响）</option>
+                        <option value="B3" selected>CA喷油持续期</option>
+                        <option value="E3">RailP轨压</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>扫描起始值 (Min)</label>
+                    <input type="number" id="sweep_min" value="20">
+                </div>
+                <div class="control-group">
+                    <label>扫描结束值 (Max)</label>
+                    <input type="number" id="sweep_max" value="35">
+                </div>
+                <div class="control-group">
+                    <label>扫描步数 (数据点数量，≥2)</label>
+                    <input type="number" id="sweep_steps" value="16" min="2">
+                </div>
+            </div>
+            <div id="speed_hint" class="notice warn" style="margin-top:14px; margin-bottom:0;">
+                ⚠️ 提示：转速 M4 在 Qhyd 计算中分子分母相互抵消，Qhyd 与转速无关，扫描转速得到的将是一条水平直线。如需观察变化趋势，请改选其他自变量。
+            </div>
+        </div>
+
+        <div class="action-container">
+            <button class="btn calc-btn" onclick="executeSweepCalculation()">⚡ 计算并更新主图</button>
+            <button class="btn save-btn" onclick="saveCurrentToWorkspace()">📥 暂存当前图表到画布</button>
+            <button class="btn merge-btn" onclick="mergeSelectedCharts()">🧬 合并叠加所选图表进行同图对比</button>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title">当前实时仿真沙盒图表</div>
+            <div class="main-chart-box">
+                <canvas id="qhydChart"></canvas>
+            </div>
+            <div class="hint-line">💡 鼠标移到图上可显示十字准线与实时读数；脉动的圆点为当前基准参数对应的位置。</div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-title" style="border-left-color:#ec4899;">曲线族自动对比（一键生成多条曲线）</div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>族变量（每条曲线取不同值）</label>
+                    <select id="fam_var" onchange="onFamVarChange()">
+                        <option value="M2">BSFC油耗</option>
+                        <option value="M3">Power功率</option>
+                        <option value="M5">缸数</option>
+                        <option value="B3">CA喷油持续期</option>
+                        <option value="E3" selected>RailP轨压</option>
+                    </select>
+                </div>
+                <div class="control-group wide">
+                    <label>取值列表（逗号分隔，最多 8 个）</label>
+                    <input type="text" id="fam_values" value="1400,1600,1800,2000">
+                </div>
+            </div>
+            <div class="hint-line">横轴沿用上方"动态范围扫描"的自变量、范围与步数；族变量不能与扫描自变量相同。结果显示在下方的合并对比画布中，与基准值相同的那条曲线会加粗。</div>
+            <div style="margin-top:14px;">
+                <button class="btn family-btn" onclick="generateFamily()">🌈 生成曲线族</button>
+            </div>
+        </div>
+
+        <div class="panel merged-section" id="mergedSection">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <div class="merged-title">
+                    🎛️ 同一坐标系合并叠加对比画布 (内置边界备注，可直接导出)
+                </div>
+                <button class="btn export-btn" onclick="exportMergedChart()">💾 导出合并对比图 (白色底+完整参数).png</button>
+            </div>
+            <div class="merged-chart-box">
+                <canvas id="mergedChartCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="panel" style="border-color: #2ecc71;">
+            <div class="workspace-header">
+                <div style="font-size: 16px; font-weight: bold; color: var(--title);">已保存的单组边界画布（勾选以进行合并）</div>
+                <button class="btn clear-btn" onclick="clearWorkspace()">清空全部缓存</button>
+            </div>
+            <div id="workspaceContainer" class="workspace-grid"></div>
+        </div>
+    </div>
+
+    <div id="tab_spray" class="tab-page" style="display:none">
+        <div class="sp-steps">
+            <span class="sp-pill active" id="sp_pill1">Step 1 / 2 · 参数输入</span>
+            <span class="sp-pill" id="sp_pill2">Step 2 / 2 · 仿真与导出</span>
+        </div>
+
+        <!-- ============ 第 1 页：参数输入（不参与仿真） ============ -->
+        <div id="sp_page1">
+            <div class="panel">
+                <div class="panel-title">从“流量计算”带入基准值</div>
+                <div class="sp-base" id="sp_base"></div>
+                <div class="toolbar">
+                    <button class="btn calc-btn" onclick="Spray.importBase('A')">⬇ 带入 Case A</button>
+                    <button class="btn" style="background:#c2410c;color:#fff" onclick="Spray.importBase('B')">⬇ 带入 Case B</button>
+                    <button class="btn merge-btn" onclick="Spray.importBase('AB')">⬇ 同时带入 A 和 B</button>
+                </div>
+                <div id="sp_import_status" class="notice"></div>
+                <div class="hint-line">带入 4 项：Qhyd → Q100，转速 → RPM，喷油持续期 → Inj Dur，轨压 → P_inj。孔径、孔数、K、夹角等不在流量计算中，请在下方手动输入；这一页的所有输入都不会触发仿真。</div>
+            </div>
+
+            <div class="sp-cards">
+                <div class="panel sp-card A">
+                    <div class="panel-title">Case A（青色油束）</div>
+                    <div class="sp-fields" id="sp_fields_A"></div>
+                    <div class="sp-derived ok" id="sp_derived_A"></div>
+                </div>
+                <div class="panel sp-card B">
+                    <div class="panel-title">Case B（橙色油束）</div>
+                    <div class="sp-fields" id="sp_fields_B"></div>
+                    <div class="sp-derived ok" id="sp_derived_B"></div>
+                </div>
+            </div>
+
+            <div class="sp-nav">
+                <button class="btn btn-ghost" onclick="Spray.restoreDefaults()">↺ 恢复默认</button>
+                <button class="btn btn-ghost" onclick="Spray.copyCase('A','B')">A → B 复制</button>
+                <button class="btn btn-ghost" onclick="Spray.copyCase('B','A')">B → A 复制</button>
+                <span class="sp-spacer"></span>
+                <div class="control-group">
+                    <label for="sp_grid">网格精度</label>
+                    <select id="sp_grid">
+                        <option value="320" selected>320 · 快速（默认）</option>
+                        <option value="400">400 · 标准</option>
+                        <option value="480">480 · 精细（与 Python 版一致）</option>
+                    </select>
+                </div>
+                <button class="btn sp-go" onclick="Spray.goSim()">下一步：进入仿真 ▶</button>
+            </div>
+            <div class="hint-line" style="text-align:right">视场固定 48×48 mm。320 网格的贯穿距与精细网格相差约 ±3%，但油束边缘（低浓度晕圈）偏宽；需要与 Python 版或实验精确对标时请选 480。</div>
+        </div>
+
+        <!-- ============ 第 2 页：仿真与导出 ============ -->
+        <div id="sp_page2" style="display:none">
+            <div class="panel sp-statusbar">
+                <span id="sp_status">READY</span>
+                <span class="s-sub" id="sp_status_sub"></span>
+            </div>
+
+            <div class="panel sp-view-bar">
+                <div class="sp-vmode-group">
+                    <span style="font-size:13px;font-weight:700;color:var(--title);">📐 观察视角：</span>
+                    <button class="sp-vmode-btn active" id="sp_vm_both" onclick="Spray.setViewMode('both')">俯视 + 正视 双视图</button>
+                    <button class="sp-vmode-btn" id="sp_vm_top" onclick="Spray.setViewMode('top')">仅俯视图（Top X-Y）</button>
+                    <button class="sp-vmode-btn" id="sp_vm_front" onclick="Spray.setViewMode('front')">仅正视图（Front X-Z）</button>
+                </div>
+                <div class="sp-vmode-group">
+                    <span class="sp-small" style="font-weight:700;color:var(--title);">正视仰角</span>
+                    <input type="range" class="sp-slider" id="sp_elev" min="0" max="60" step="1" value="30" style="min-width:140px;flex:none;width:150px;">
+                    <span class="sp-small" id="sp_elev_lbl" style="min-width:34px;">30°</span>
+                    <span class="sp-small">0° = 纯侧视（油束重叠）；调大可从前上方俯瞰，油束展开</span>
+                </div>
+            </div>
+
+            <div class="sp-view">
+                <div class="sp-viewcol A">
+                    <div class="sp-info" id="sp_info_A"></div>
+                    <div class="sp-canvas-pair both" id="sp_pair_A">
+                        <div class="sp-cv-box" id="sp_box_A_top">
+                            <span class="sp-cv-tag">俯视 Top (X-Y)</span>
+                            <canvas class="sp-canvas" id="sp_cv_A" width="720" height="720"></canvas>
+                        </div>
+                        <div class="sp-cv-box" id="sp_box_A_front">
+                            <span class="sp-cv-tag">正视 Front (X-Z)</span>
+                            <canvas class="sp-canvas" id="sp_cv_A_front" width="720" height="720"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="sp-viewcol B">
+                    <div class="sp-info" id="sp_info_B"></div>
+                    <div class="sp-canvas-pair both" id="sp_pair_B">
+                        <div class="sp-cv-box" id="sp_box_B_top">
+                            <span class="sp-cv-tag">俯视 Top (X-Y)</span>
+                            <canvas class="sp-canvas" id="sp_cv_B" width="720" height="720"></canvas>
+                        </div>
+                        <div class="sp-cv-box" id="sp_box_B_front">
+                            <span class="sp-cv-tag">正视 Front (X-Z)</span>
+                            <canvas class="sp-canvas" id="sp_cv_B_front" width="720" height="720"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="sp-prog">
+                    <span>A 喷射进度</span><div class="sp-bar A"><i id="sp_bar_A"></i></div><span id="sp_barp_A">0%</span>
+                    <span>B 喷射进度</span><div class="sp-bar B"><i id="sp_bar_B"></i></div><span id="sp_barp_B">0%</span>
+                </div>
+                <div class="hint-line" style="margin-top:10px">进度条按各自的喷射时长计算，100% 表示喷射结束，之后油束自由发展。图中红色数字为孔号（顺时针），标签为各孔投影贯穿距（mm）。</div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">运行控制</div>
+                <div class="sp-ctl">
+                    <button class="btn btn-ghost" onclick="Spray.goParams()">◀ 返回参数</button>
+                    <button class="btn save-btn" id="sp_btn_run" onclick="Spray.toggleRun()">▶ 开始仿真</button>
+                    <button class="btn clear-btn" style="padding:9px 16px" onclick="Spray.reset()">↺ 重置</button>
+                    <span class="sp-sep"></span>
+                    <div class="control-group"><label for="sp_stop">运行到步数</label><input type="number" id="sp_stop" min="40" max="400" step="10" value="160"></div>
+                    <div class="control-group"><label for="sp_spf">每帧步数</label><input type="number" id="sp_spf" min="1" max="4" step="1" value="2"></div>
+                    <span class="sp-small" id="sp_perf"></span>
+                </div>
+                <div class="sp-ctl">
+                    <button class="btn btn-ghost" onclick="Spray.frameGo('first')" title="第一帧">|◀</button>
+                    <button class="btn btn-ghost" onclick="Spray.frameGo('prev')" title="上一帧（←）">◀</button>
+                    <button class="btn calc-btn" id="sp_btn_replay" onclick="Spray.toggleReplay()" title="空格">▶ 回放</button>
+                    <button class="btn btn-ghost" onclick="Spray.frameGo('next')" title="下一帧（→）">▶</button>
+                    <button class="btn btn-ghost" onclick="Spray.frameGo('last')" title="最后一帧">▶|</button>
+                    <input type="range" class="sp-slider" id="sp_slider" min="1" max="1" value="1" step="1">
+                    <span class="sp-small" id="sp_frame_lbl">0 / 0</span>
+                </div>
+                <div class="sp-ctl">
+                    <div class="control-group"><label for="sp_speed">回放/视频速度</label>
+                        <select id="sp_speed"><option value="0.5">0.5×</option><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select></div>
+                    <button class="btn export-btn" onclick="Spray.savePNG()">💾 保存当前视图 PNG</button>
+                    <button class="btn export-btn" id="sp_btn_webm" onclick="Spray.exportMP4('current')">🎬 导出当前视图 MP4</button>
+                    <button class="btn merge-btn" style="padding:9px 16px;" id="sp_btn_front_mp4" onclick="Spray.exportMP4('front')">🎥 单独导出正视图 MP4</button>
+                    <span class="sp-small">A、B 始终显示同一帧；拖动滑块或逐帧会自动暂停仿真。快捷键：空格 回放，← → 逐帧。</span>
+                </div>
+                <div id="sp_msg" class="notice" style="margin-top:14px;margin-bottom:0"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab_nozzle" class="tab-page" style="display:none">
+        <div class="panel" style="margin-bottom:18px;">
+            <div class="toolbar" style="margin-bottom:8px; justify-content:space-between;">
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <button class="btn calc-btn" id="nz_subtab_d" onclick="NozzleTool.switchSubTab(0)">孔径计算工具 (D)</button>
+                    <button class="btn btn-ghost" id="nz_subtab_mu" onclick="NozzleTool.switchSubTab(1)">流量系数计算工具 (µ / Cd)</button>
+                    <button class="btn save-btn" onclick="NozzleTool.importFromFlowBase()">⬇ 从“流量计算”带入基准 (Qhyd / 轨压)</button>
+                </div>
+                <span class="sp-small" id="nz_sync_status">孔径 / 孔数可一键回填至喷雾仿真页</span>
+            </div>
+            <div id="nz_import_notice" class="notice"></div>
+        </div>
+
+        <div id="nz_panel_d" class="panel">
+            <div class="panel-title">孔径计算工具 — 输入参数</div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>Qhyd 流量 (cm³/30″)</label>
+                    <input type="number" id="nz_p1_q" value="650" step="1" oninput="NozzleTool.calcD()">
+                </div>
+                <div class="control-group">
+                    <label>燃油压力 Fuel Pressure (bar)</label>
+                    <input type="number" id="nz_p1_pf" value="100" step="1" oninput="NozzleTool.calcD()">
+                </div>
+                <div class="control-group">
+                    <label>背压 Backpressure (bar)</label>
+                    <input type="number" id="nz_p1_pb" value="0" step="1" oninput="NozzleTool.calcD()">
+                </div>
+                <div class="control-group">
+                    <label>孔数 NSP</label>
+                    <input type="number" id="nz_p1_n" value="9" step="1" min="1" oninput="NozzleTool.calcD()">
+                </div>
+                <div class="control-group">
+                    <label>燃油密度 ρ (kg/dm³)</label>
+                    <input type="number" id="nz_p1_rho" value="0.81" step="0.01" oninput="NozzleTool.calcD()">
+                </div>
+                <div class="control-group">
+                    <label>流量系数 µ</label>
+                    <input type="number" id="nz_p1_mu" value="0.877" step="0.001" oninput="NozzleTool.calcD()">
+                </div>
+            </div>
+
+            <div class="kpi-box" style="margin-top:18px;">
+                <div>
+                    <div class="kpi-label">计算结果 · 出口孔径 DSP</div>
+                    <div><span id="nz_p1_result" class="kpi-number">—</span><span class="kpi-unit">mm</span></div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn calc-btn" onclick="NozzleTool.sendToSpray('A')">➡ 填入喷雾 Case A</button>
+                    <button class="btn" style="background:#c2410c;color:#fff" onclick="NozzleTool.sendToSpray('B')">➡ 填入喷雾 Case B</button>
+                </div>
+            </div>
+
+            <div class="hint-line" style="font-family:ui-monospace,Menlo,Consolas,monospace; line-height:1.7;">
+                公式：D = √[ (Q/30) / (N · µ · π/4 · √(2·ΔP/ρ)) ]（mm），其中 ΔP = P_fuel − P_back，压力单位 bar → dyn/cm²，孔径由 cm 换算为 mm。
+            </div>
+        </div>
+
+        <div id="nz_panel_mu" class="panel" style="display:none;">
+            <div class="panel-title">流量系数计算工具 — 输入参数</div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>Qhyd 流量 (cm³/30″)</label>
+                    <input type="number" id="nz_p2_q" value="650" step="1" oninput="NozzleTool.calcMu()">
+                </div>
+                <div class="control-group">
+                    <label>燃油压力 Fuel Pressure (bar)</label>
+                    <input type="number" id="nz_p2_pf" value="100" step="1" oninput="NozzleTool.calcMu()">
+                </div>
+                <div class="control-group">
+                    <label>背压 Backpressure (bar)</label>
+                    <input type="number" id="nz_p2_pb" value="0" step="1" oninput="NozzleTool.calcMu()">
+                </div>
+                <div class="control-group">
+                    <label>孔数 NSP</label>
+                    <input type="number" id="nz_p2_n" value="9" step="1" min="1" oninput="NozzleTool.calcMu()">
+                </div>
+                <div class="control-group">
+                    <label>出口孔径 DSP (mm)</label>
+                    <input type="number" id="nz_p2_d" value="0.149" step="0.001" oninput="NozzleTool.calcMu()">
+                </div>
+                <div class="control-group">
+                    <label>燃油密度 ρ (kg/dm³)</label>
+                    <input type="number" id="nz_p2_rho" value="0.81" step="0.01" oninput="NozzleTool.calcMu()">
+                </div>
+            </div>
+
+            <div class="kpi-box" style="margin-top:18px;">
+                <div>
+                    <div class="kpi-label">计算结果 · 流量系数 µ (Cd)</div>
+                    <div><span id="nz_p2_result" class="kpi-number">—</span><span class="kpi-unit">—</span></div>
+                </div>
+            </div>
+
+            <div class="hint-line" style="font-family:ui-monospace,Menlo,Consolas,monospace; line-height:1.7;">
+                公式：µ = (Q/30) / [ N · (π/4) · D² · √(2·ΔP/ρ) ]，其中 D 由 mm 换算为 cm，ΔP 由 bar 换算为 dyn/cm²。
+            </div>
+        </div>
+
+        <div id="nz_sweep_block" class="panel">
+            <div class="panel-title">一维参数扫描 &amp; 曲线对比（孔径 D）</div>
+            <div class="form-grid">
+                <div class="control-group">
+                    <label>扫描参数</label>
+                    <select id="nz_sweepParam">
+                        <option value="q">Q_hyd — 流量 (cm³/30″)</option>
+                        <option value="pf">Fuel Pressure — 燃油压力 (bar)</option>
+                        <option value="pb">Backpressure — 背压 (bar)</option>
+                        <option value="n">NSP — 孔数</option>
+                        <option value="rho">ρ — 燃油密度 (kg/dm³)</option>
+                        <option value="mu">µ — 流量系数</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>起始值</label>
+                    <input type="number" id="nz_sweepFrom" value="50">
+                </div>
+                <div class="control-group">
+                    <label>终止值</label>
+                    <input type="number" id="nz_sweepTo" value="200">
+                </div>
+                <div class="control-group">
+                    <label>步长</label>
+                    <input type="number" id="nz_sweepStep" value="10" min="0.0001">
+                </div>
+            </div>
+            <div style="margin-top:14px; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                <button class="btn calc-btn" onclick="NozzleTool.runSweep()">▶ 生成曲线图</button>
+                <button class="btn merge-btn" id="nz_mergeBtn" style="display:none;" onclick="NozzleTool.openMergeModal()">🧬 合并所选曲线 (<span id="nz_mergeCount">0</span>)</button>
+            </div>
+            <div id="nz_chartList" style="margin-top:18px; display:grid; grid-template-columns:repeat(auto-fill, minmax(340px, 1fr)); gap:16px;"></div>
+        </div>
+
+        <div id="nz_map_block" class="panel">
+            <div class="panel-title" style="border-left-color:#9b59b6;">双参数扫描 Map 热力图 &amp; 等值线（孔径 D）</div>
+            <div class="sp-cards">
+                <div class="panel sp-card A" style="padding:14px;">
+                    <div class="panel-title">X 轴参数</div>
+                    <div class="control-group" style="margin-bottom:10px;">
+                        <label>选择 X 轴变量</label>
+                        <select id="nz_mapParamX">
+                            <option value="q">Q_hyd — 流量</option>
+                            <option value="pf" selected>燃油压力</option>
+                            <option value="pb">背压</option>
+                            <option value="n">孔数 NSP</option>
+                            <option value="rho">ρ — 燃油密度</option>
+                            <option value="mu">µ — 流量系数</option>
+                        </select>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
+                        <div class="control-group"><label>起始</label><input type="number" id="nz_mapXFrom" value="50"></div>
+                        <div class="control-group"><label>终止</label><input type="number" id="nz_mapXTo" value="200"></div>
+                        <div class="control-group"><label>步长</label><input type="number" id="nz_mapXStep" value="15" min="0.0001"></div>
+                    </div>
+                </div>
+                <div class="panel sp-card B" style="padding:14px;">
+                    <div class="panel-title">Y 轴参数</div>
+                    <div class="control-group" style="margin-bottom:10px;">
+                        <label>选择 Y 轴变量</label>
+                        <select id="nz_mapParamY">
+                            <option value="q">Q_hyd — 流量</option>
+                            <option value="pf">燃油压力</option>
+                            <option value="pb">背压</option>
+                            <option value="n">孔数 NSP</option>
+                            <option value="rho">ρ — 燃油密度</option>
+                            <option value="mu" selected>µ — 流量系数</option>
+                        </select>
+                    </div>
+                    <div class="form-grid" style="grid-template-columns:repeat(3,1fr); gap:8px;">
+                        <div class="control-group"><label>起始</label><input type="number" id="nz_mapYFrom" value="0.6"></div>
+                        <div class="control-group"><label>终止</label><input type="number" id="nz_mapYTo" value="1.0"></div>
+                        <div class="control-group"><label>步长</label><input type="number" id="nz_mapYStep" value="0.05" min="0.0001"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:14px;">
+                <button class="btn merge-btn" onclick="NozzleTool.runMapSweep()">🗺 生成 Map 图</button>
+            </div>
+            <div id="nz_mapList" style="margin-top:18px; display:flex; flex-direction:column; gap:16px;"></div>
+        </div>
+    </div>
+
+    <div id="nz_modal" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(8,14,26,0.65); align-items:center; justify-content:center; padding:18px;">
+        <div style="background:var(--wrap); color:var(--text); border:1px solid var(--border); border-radius:12px; width:100%; max-width:820px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,0.45);">
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--border);">
+                <strong id="nz_modal_title" style="font-size:15px;">图表预览</strong>
+                <button class="btn btn-ghost" style="padding:4px 10px;" onclick="NozzleTool.closeModal()">✕</button>
+            </div>
+            <div id="nz_modal_body" style="padding:18px; overflow-y:auto; flex:1; background:var(--panel);"></div>
+            <div id="nz_modal_footer" style="display:flex; justify-content:flex-end; gap:10px; padding:12px 18px; border-top:1px solid var(--border); background:var(--wrap);"></div>
+        </div>
+    </div>
+</div>
+
+<div class="author-footer">Author：LU Xu</div>
+
+<script>
+    // ================= 全局状态 =================
+    let isDark = true;
+    let currentChart = null;
+    let mergedChartInstance = null;
+    let latestRunData = null;
+    let cardCounter = 0;
+    let isSaving = false;
+    let lastBaseQ = null;          // 基准参数对应的 Qhyd（无效时为 null）
+
+    let dataWarehouse = {};
+    let savedChartInstances = {};
+
+    const THEMES = {
+        dark:  { text: '#a9bcd6', grid: 'rgba(130,160,200,0.14)', title: '#d6e2f0', tipBg: 'rgba(8,14,26,0.94)', tipText: '#e8f1fb' },
+        light: { text: '#555555', grid: 'rgba(0,0,0,0.08)',        title: '#2C3E50', tipBg: 'rgba(0,0,0,0.80)',   tipText: '#ffffff' }
+    };
+    const PAL_DARK  = ['#22d3ee', '#f472b6', '#a3e635', '#fbbf24', '#a78bfa', '#fb7185', '#34d399', '#60a5fa'];
+    const PAL_LIGHT = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E'];
+    const HEAT_STOPS = [[0, '#3b82f6'], [0.25, '#06b6d4'], [0.5, '#10b981'], [0.75, '#f59e0b'], [1, '#ef4444']];
+
+    const PARAM_META = {
+        M2: { short: '油耗',   unit: 'g/kWh' },
+        M3: { short: '功率',   unit: 'kW' },
+        M4: { short: '转速',   unit: 'rpm' },
+        M5: { short: '缸数',   unit: '' },
+        B3: { short: '持续期', unit: '°CA' },
+        E3: { short: '轨压',   unit: 'bar' }
+    };
+    const FAMILY_META = {
+        M2: { name: 'BSFC油耗',     unit: 'g/kWh', def: '200,220,240,260' },
+        M3: { name: 'Power功率',    unit: 'kW',    def: '100,129,160,200' },
+        M5: { name: '缸数',          unit: '',      def: '3,4,6,8' },
+        B3: { name: 'CA喷油持续期', unit: '°CA',   def: '20,25,30,35' },
+        E3: { name: 'RailP轨压',    unit: 'bar',   def: '1200,1400,1600,1800' }
+    };
+
+    // 各sweep变量的推荐默认范围（手动切换扫描变量时自动填入）
+    const sweepVarDefaults = {
+        M2: { min: 150, max: 350 },
+        M3: { min: 50,  max: 300 },
+        M4: { min: 800, max: 4500 },
+        B3: { min: 10,  max: 60 },
+        E3: { min: 400, max: 2500 }
+    };
+
+    const dk = (chart) => isDark && !chart.$exporting;          // 当前图表是否按深色绘制
+    const fmt = (v) => Number(Number(v).toFixed(4)).toString();
+    const fmt2 = (v) => Number(Number(v).toFixed(2)).toString();
+
+    // ================= Chart.js 自定义插件 =================
+    // 1) 背景：浅色/导出时铺纯白底，深色时透明（透出面板底色）
+    const whiteBgPlugin = {
+        id: 'globalCanvasWhiteBackground',
+        beforeDraw: (chart) => {
+            if (dk(chart)) return;
+            const { ctx } = chart;
+            ctx.save();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    };
+    // 2) 从左到右“画出”动画：绘制数据层前裁剪
+    const revealPlugin = {
+        id: 'reveal',
+        beforeDatasetsDraw(chart) {
+            const ctx = chart.ctx; ctx.save();
+            const r = chart.$reveal;
+            if (r !== undefined && r < 1) {
+                const a = chart.chartArea;
+                ctx.beginPath();
+                ctx.rect(a.left - 10, 0, (a.width + 20) * r, chart.height);
+                ctx.clip();
+            }
+        },
+        afterDatasetsDraw(chart) { chart.ctx.restore(); }
+    };
+    // 3) 曲线下方渐变填充（单曲线图）
+    const areaFillPlugin = {
+        id: 'areaFill',
+        beforeDatasetsDraw(chart, args, opt) {
+            if (!opt || !opt.enabled) return;
+            const meta = chart.getDatasetMeta(0);
+            const pts = meta && meta.data;
+            const a = chart.chartArea;
+            if (!pts || !pts.length || !a) return;
+            const ctx = chart.ctx;
+            const g = ctx.createLinearGradient(0, a.top, 0, a.bottom);
+            if (dk(chart)) { g.addColorStop(0, 'rgba(34,211,238,0.30)'); g.addColorStop(1, 'rgba(34,211,238,0)'); }
+            else           { g.addColorStop(0, 'rgba(52,152,219,0.20)'); g.addColorStop(1, 'rgba(52,152,219,0)'); }
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, a.bottom);
+            pts.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(pts[pts.length - 1].x, a.bottom);
+            ctx.closePath();
+            ctx.fillStyle = g;
+            ctx.fill();
+            ctx.restore();
+        }
+    };
+    // 4) 曲线发光（仅深色）
+    const glowPlugin = {
+        id: 'lineGlow',
+        beforeDatasetDraw(chart, args) {
+            if (!dk(chart)) return;
+            const ds = chart.data.datasets[args.index];
+            const ctx = chart.ctx; ctx.save();
+            ctx.shadowColor = ds.glowColor || '#22d3ee';
+            ctx.shadowBlur = 14;
+        },
+        afterDatasetDraw(chart) { if (dk(chart)) chart.ctx.restore(); }
+    };
+    // 辅助：圆角标签
+    function drawTag(ctx, text, x, y, bg, fg, border) {
+        ctx.save();
+        ctx.font = '12px -apple-system, "Segoe UI", sans-serif';
+        const w = ctx.measureText(text).width + 14, h = 21, r = 4;
+        ctx.beginPath();
+        ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+        ctx.fillStyle = bg; ctx.fill();
+        if (border) { ctx.strokeStyle = border; ctx.lineWidth = 1; ctx.stroke(); }
+        ctx.fillStyle = fg; ctx.textBaseline = 'middle';
+        ctx.fillText(text, x + 7, y + h / 2 + 0.5);
+        ctx.restore();
+        return { w, h };
+    }
+    function tagWidth(ctx, text) {
+        ctx.save(); ctx.font = '12px -apple-system, "Segoe UI", sans-serif';
+        const w = ctx.measureText(text).width + 14; ctx.restore(); return w;
+    }
+    // 5) 基准点标记（脉动圆点 + 引导线 + 标签）
+    const baselineMarkerPlugin = {
+        id: 'baselineMarker',
+        afterDatasetsDraw(chart, args, opt) {
+            if (!opt || !opt.show) return;
+            if (chart.$reveal !== undefined && chart.$reveal < 0.98) return;
+            const a = chart.chartArea; if (!a) return;
+            const px = chart.scales.x.getPixelForValue(opt.x);
+            const py = chart.scales.y.getPixelForValue(opt.y);
+            if (px < a.left - 1 || px > a.right + 1 || py < a.top - 1 || py > a.bottom + 1) return;
+            const ctx = chart.ctx, d = dk(chart);
+            const col = d ? '#fbbf24' : '#e67e22';
+            ctx.save();
+            ctx.setLineDash([3, 4]); ctx.lineWidth = 1; ctx.strokeStyle = col; ctx.globalAlpha = 0.45;
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, a.bottom);
+            ctx.moveTo(px, py); ctx.lineTo(a.left, py); ctx.stroke();
+            ctx.setLineDash([]); ctx.globalAlpha = 1;
+            if (opt.pulse && !chart.$exporting) {
+                const t = (performance.now() % 1600) / 1600;
+                ctx.beginPath(); ctx.arc(px, py, 6 + 16 * t, 0, Math.PI * 2);
+                ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.globalAlpha = (1 - t) * 0.8; ctx.stroke(); ctx.globalAlpha = 1;
+            }
+            ctx.beginPath(); ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.fillStyle = d ? '#0b1220' : '#ffffff'; ctx.fill();
+            ctx.lineWidth = 2.5; ctx.strokeStyle = col; ctx.stroke();
+            ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+            ctx.restore();
+            const text = '基准点 ' + fmt(opt.y);
+            const w = tagWidth(ctx, text);
+            let tx = px + 12, ty = py - 34;
+            if (tx + w > a.right) tx = px - 12 - w;
+            if (ty < a.top) ty = py + 14;
+            // 曲线族画布上标签可能压在多条曲线上，用不透明底色保证可读
+            const tagBg = opt.solid ? (d ? '#2b2410' : '#fdebd0')
+                                    : (d ? 'rgba(251,191,36,0.16)' : 'rgba(230,126,34,0.12)');
+            drawTag(ctx, text, tx, ty, tagBg, d ? '#fde68a' : '#a04000', col);
+        }
+    };
+    // 6) 十字准线 + 实时读数
+    function interpY(data, x) {
+        if (!data.length) return NaN;
+        if (x <= data[0].x) return data[0].y;
+        for (let i = 1; i < data.length; i++) {
+            if (x <= data[i].x) {
+                const p = data[i - 1], q = data[i];
+                const k = q.x === p.x ? 0 : (x - p.x) / (q.x - p.x);
+                return p.y + (q.y - p.y) * k;
+            }
+        }
+        return data[data.length - 1].y;
+    }
+    const crosshairPlugin = {
+        id: 'crosshair',
+        afterEvent(chart, args) {
+            if (args.replay) return;
+            const e = args.event, a = chart.chartArea;
+            if (!a) return;
+            if (e.type === 'mouseout') { if (chart.$cross) { chart.$cross = null; args.changed = true; } return; }
+            if (e.type === 'mousemove') {
+                const inside = e.x >= a.left && e.x <= a.right && e.y >= a.top && e.y <= a.bottom;
+                chart.$cross = inside ? { x: e.x, y: e.y } : null;
+                args.changed = true;
+            }
+        },
+        afterDatasetsDraw(chart) {
+            const c = chart.$cross;
+            if (!c || chart.$exporting) return;
+            const a = chart.chartArea, ctx = chart.ctx, d = dk(chart);
+            const xv = chart.scales.x.getValueForPixel(c.x);
+            const single = chart.data.datasets.length === 1;
+            let yv, py;
+            if (single) {
+                yv = interpY(chart.data.datasets[0].data, xv);
+                py = chart.scales.y.getPixelForValue(yv);
+            } else {
+                py = c.y; yv = chart.scales.y.getValueForPixel(c.y);
+            }
+            ctx.save();
+            ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+            ctx.strokeStyle = d ? 'rgba(34,211,238,0.55)' : 'rgba(52,73,94,0.45)';
+            ctx.beginPath(); ctx.moveTo(c.x, a.top); ctx.lineTo(c.x, a.bottom);
+            ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke();
+            ctx.restore();
+            const bg = d ? 'rgba(8,14,26,0.92)' : 'rgba(44,62,80,0.9)';
+            const border = d ? 'rgba(34,211,238,0.6)' : null;
+            const fg = d ? '#e8f1fb' : '#ffffff';
+            if (single) {
+                ctx.save();
+                ctx.beginPath(); ctx.arc(c.x, py, 4.5, 0, Math.PI * 2);
+                ctx.fillStyle = d ? '#22d3ee' : '#3498db'; ctx.fill();
+                ctx.lineWidth = 2; ctx.strokeStyle = d ? '#0b1220' : '#ffffff'; ctx.stroke();
+                ctx.restore();
+                const xt = (chart.options.scales.x.title.text || 'x');
+                const text = 'Qhyd ' + fmt2(yv) + '  @ ' + xt + ' ' + fmt2(xv);
+                const w = tagWidth(ctx, text);
+                let tx = c.x + 14, ty = py - 32;
+                if (tx + w > a.right) tx = c.x - 14 - w;
+                if (ty < a.top) ty = py + 12;
+                drawTag(ctx, text, tx, ty, bg, fg, border);
+            }
+            // 坐标轴数值标签
+            const xtxt = fmt2(xv), ytxt = fmt2(yv);
+            const xw = tagWidth(ctx, xtxt);
+            drawTag(ctx, xtxt, Math.min(Math.max(c.x - xw / 2, a.left), a.right - xw), a.bottom - 23, bg, fg, border);
+            if (!single) drawTag(ctx, ytxt, a.left + 4, Math.min(Math.max(py - 10, a.top), a.bottom - 22), bg, fg, border);
+        }
+    };
+    Chart.register(whiteBgPlugin, revealPlugin, areaFillPlugin, glowPlugin, baselineMarkerPlugin, crosshairPlugin);
+
+    // ================= 图表通用工具 =================
+    function heatGradient(chart) {
+        const a = chart.chartArea;
+        if (!a) return '#22d3ee';
+        const key = a.top + '_' + a.bottom;
+        if (chart.$heat && chart.$heat.key === key) return chart.$heat.g;
+        const g = chart.ctx.createLinearGradient(0, a.bottom, 0, a.top);
+        HEAT_STOPS.forEach(([p, c]) => g.addColorStop(p, c));
+        chart.$heat = { key, g };
+        return g;
+    }
+
+    function makeOptions(o) {
+        const t = isDark ? THEMES.dark : THEMES.light;
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            interaction: { mode: 'index', intersect: false, axis: 'x' },
+            layout: { padding: { right: 10 } },
+            scales: {
+                x: {
+                    type: 'linear', min: o.xMin, max: o.xMax,
+                    title: { display: true, text: o.xLabel, color: t.text, font: { weight: 'bold' } },
+                    ticks: { color: t.text, maxTicksLimit: 12 },
+                    grid: { color: t.grid }
+                },
+                y: {
+                    title: { display: true, text: '流量值 Qhyd', color: t.text, font: { weight: 'bold' } },
+                    ticks: { color: t.text },
+                    grid: { color: t.grid }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true, position: 'top',
+                    labels: {
+                        color: t.text, boxWidth: 22, font: o.legendFont || { size: 12 },
+                        // 渐变线条的图例色块用纯色代替（渐变在图例里没有绘图区可参照）
+                        generateLabels: (chart) => {
+                            const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            labels.forEach(l => {
+                                const ds = chart.data.datasets[l.datasetIndex];
+                                if (ds && ds.ci === undefined) {
+                                    const c = dk(chart) ? '#22d3ee' : '#3498db';
+                                    l.strokeStyle = c; l.fillStyle = c;
+                                }
+                            });
+                            return labels;
+                        }
+                    }
+                },
+                title: {
+                    display: !!o.titleLines, text: o.titleLines || '', align: 'start', color: t.title,
+                    font: o.titleFont || { size: 11, weight: 'normal' }, padding: { top: 6, bottom: 10 }
+                },
+                tooltip: { enabled: !!o.tooltip, backgroundColor: t.tipBg, titleColor: t.tipText, bodyColor: t.tipText, borderColor: 'rgba(34,211,238,0.4)', borderWidth: isDark ? 1 : 0 },
+                baselineMarker: o.marker || { show: false },
+                areaFill: { enabled: !!o.area }
+            }
+        };
+    }
+
+    function applyThemeToChart(chart, dark) {
+        if (!chart || !chart.options) return;
+        const t = dark ? THEMES.dark : THEMES.light;
+        const o = chart.options;
+        ['x', 'y'].forEach(k => {
+            const s = o.scales[k];
+            s.ticks.color = t.text; s.grid.color = t.grid; s.title.color = t.text;
+        });
+        o.plugins.legend.labels.color = t.text;
+        o.plugins.title.color = t.title;
+        o.plugins.tooltip.backgroundColor = t.tipBg;
+        o.plugins.tooltip.titleColor = t.tipText;
+        o.plugins.tooltip.bodyColor = t.tipText;
+        o.plugins.tooltip.borderWidth = dark ? 1 : 0;
+        const pal = dark ? PAL_DARK : PAL_LIGHT;
+        chart.data.datasets.forEach(ds => {
+            if (ds.ci !== undefined) {
+                ds.borderColor = pal[ds.ci % pal.length];
+                ds.glowColor = ds.borderColor;
+            }
+        });
+        chart.update('none');
+    }
+
+    function allCharts() {
+        return [currentChart, mergedChartInstance, ...Object.values(savedChartInstances)].filter(Boolean);
+    }
+
+    // 从左到右“画出”动画
+    function revealChart(chart, ms) {
+        if (!chart) return;
+        const token = (chart.$revealToken = (chart.$revealToken || 0) + 1);
+        const t0 = performance.now();
+        chart.$reveal = 0;
+        const step = (now) => {
+            if (!chart.ctx || chart.$revealToken !== token) return;
+            const p = Math.min(1, (now - t0) / ms);
+            chart.$reveal = 1 - Math.pow(1 - p, 3);
+            chart.draw();
+            if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }
+
+    // 基准点脉动：持续重绘主图
+    function pulseLoop() {
+        // 主图与（带基准点的）曲线族画布都做脉动重绘
+        [currentChart, mergedChartInstance].forEach(c => {
+            const m = c && c.ctx && c.options && c.options.plugins && c.options.plugins.baselineMarker;
+            if (!document.hidden && m && m.show && m.pulse && !c.$exporting &&
+                (c.$reveal === undefined || c.$reveal >= 1)) {
+                c.draw();
+            }
+        });
+        requestAnimationFrame(pulseLoop);
+    }
+
+    function downloadURI(uri, name) {
+        const a = document.createElement('a');
+        a.href = uri; a.download = name;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    }
+
+    // 导出：临时切到浅色白底、去掉准线/脉动，导出后恢复
+    function exportChartPNG(chart, filename) {
+        if (!chart) return;
+        chart.$cross = null;
+        chart.$exporting = true;
+        chart.$reveal = 1;
+        applyThemeToChart(chart, false);
+        const uri = chart.toBase64Image();
+        chart.$exporting = false;
+        applyThemeToChart(chart, isDark);
+        downloadURI(uri, filename);
+    }
+
+    // ================= 主题 =================
+    function setTheme(dark) {
+        isDark = dark;
+        document.body.classList.toggle('dark', dark);
+        document.getElementById('themeBtn').textContent = dark ? '☀️ 切换浅色' : '🌙 切换深色';
+        try { localStorage.setItem('qhyd_theme', dark ? 'dark' : 'light'); } catch (e) {}
+        allCharts().forEach(c => applyThemeToChart(c, dark));
+    }
+    function toggleTheme() { setTheme(!isDark); }
+
+    // ================= 数字滚动 + 仪表盘 =================
+    let kpiAnim = null;
+    function animateNumber(el, to) {
+        const from = parseFloat(el.dataset.val);
+        const start = isFinite(from) ? from : 0;
+        if (kpiAnim) cancelAnimationFrame(kpiAnim);
+        const t0 = performance.now(), dur = 700;
+        const step = (now) => {
+            const p = Math.min(1, (now - t0) / dur);
+            const v = start + (to - start) * (1 - Math.pow(1 - p, 3));
+            el.dataset.val = v;
+            el.textContent = v.toFixed(2);
+            if (p < 1) kpiAnim = requestAnimationFrame(step);
+            else { kpiAnim = null; el.dataset.val = to; el.textContent = to.toFixed(2); }
+        };
+        kpiAnim = requestAnimationFrame(step);
+    }
+
+    function updateGauge() {
+        const needle = document.getElementById('gauge_needle');
+        const cap = document.getElementById('gauge_caption');
+        const minEl = document.getElementById('gauge_min');
+        const maxEl = document.getElementById('gauge_max');
+        if (!latestRunData || lastBaseQ === null) {
+            needle.style.transform = 'rotate(0deg)';
+            minEl.textContent = '—'; maxEl.textContent = '—';
+            cap.textContent = '基准点在当前扫描曲线值域中的位置';
+            return;
+        }
+        const ys = latestRunData.yData;
+        const yMin = Math.min(...ys), yMax = Math.max(...ys);
+        minEl.textContent = fmt(yMin);
+        maxEl.textContent = fmt(yMax);
+        let frac, note = '';
+        if (yMax - yMin < 1e-9) { frac = 0.5; note = '（曲线为水平线）'; }
+        else {
+            frac = (lastBaseQ - yMin) / (yMax - yMin);
+            if (frac < 0) { frac = 0; note = '（低于曲线值域）'; }
+            else if (frac > 1) { frac = 1; note = '（高于曲线值域）'; }
+        }
+        needle.style.transform = 'rotate(' + (frac * 180).toFixed(1) + 'deg)';
+        cap.textContent = '基准点位于当前扫描曲线值域的 ' + (frac * 100).toFixed(0) + '% ' + note;
+    }
+
+    // ================= 扫描面板逻辑 =================
+    function onSweepVarChange() {
+        const varCode = document.getElementById('sweep_var').value;
+        const preset = sweepVarDefaults[varCode];
+        if (preset) {
+            document.getElementById('sweep_min').value = preset.min;
+            document.getElementById('sweep_max').value = preset.max;
+        }
+        document.getElementById('speed_hint').style.display = (varCode === 'M4') ? 'block' : 'none';
+        syncFamilyOptions();
+    }
+
+    function readBase() {
+        return {
+            M2: parseFloat(document.getElementById('base_M2').value),
+            M3: parseFloat(document.getElementById('base_M3').value),
+            M4: parseFloat(document.getElementById('base_M4').value),
+            M5: parseFloat(document.getElementById('base_M5').value),
+            B3: parseFloat(document.getElementById('base_B3').value),
+            E3: parseFloat(document.getElementById('base_E3').value)
+        };
+    }
+    function baseIsValid(b) {
+        return !([b.M2, b.M3, b.M4, b.M5, b.B3, b.E3].some(v => isNaN(v)) || b.M4 <= 0 || b.M5 <= 0 || b.B3 <= 0 || b.E3 <= 0);
+    }
+
+    /**
+     * 完整复现 XLS "Calc. Tool" 的计算链：
+     *   C3 [s]  = B3[°CA] / (A3[rpm] × 6)            ← 喷射持续时间
+     *   D3 [m³] = M2×M3 / (M4×M5×0.02475) × 1e-9    ← 每次喷油体积
+     *   I3      = D3 / (0.86 × √(E3×1e5) × C3)       ← 流量系数 c  [m³/s/Pa^0.5]
+     *   G3 [cm³]= 30 × I3 × √(100×1e5) × 1e6         ← Qhyd (Bernoulli)
+     *
+     * 注：A3（左侧行转速）= M4（右侧工况转速），代入后 M4 在分子分母消掉，
+     *     Qhyd 最终与转速 M4 无关，正确化简式为：
+     *     Qhyd = 72.7273 × M2 × M3 / (M5 × B3 × 0.86 × √E3)
+     *     这里保留逐步写法，便于对照 XLS 核查。
+     */
+    function calculateQhyd(M2, M3, M4, M5, B3, E3) {
+        const C3_s  = B3 / (M4 * 6);                        // 喷射时间 [s]
+        const D3_m3 = (M2 * M3) / (M4 * M5 * 0.02475) * 1e-9; // 每次喷油量 [m³]
+        const E3_Pa = E3 * 1e5;                              // 轨压换算 bar→Pa
+        const I3    = D3_m3 / (0.86 * Math.sqrt(E3_Pa) * C3_s); // 流量系数 c
+        const G3    = 30 * I3 * Math.sqrt(100e5) * 1e6;     // Qhyd [cm³/100bar/30s]
+        return G3;
+    }
+    const qOf = (p) => calculateQhyd(p.M2, p.M3, p.M4, p.M5, p.B3, p.E3);
+
+    // 读取并校验扫描输入；失败返回 null
+    function readSweepInputs() {
+        const base = readBase();
+        const sweepVar = document.getElementById('sweep_var').value;
+        const minVal = parseFloat(document.getElementById('sweep_min').value);
+        const maxVal = parseFloat(document.getElementById('sweep_max').value);
+        let steps = parseInt(document.getElementById('sweep_steps').value);
+        const sel = document.getElementById('sweep_var');
+        const label = sel.options[sel.selectedIndex].text.replace(/（.*?）/g, '');
+
+        if (!baseIsValid(base)) {
+            alert('⚠️ 基准参数存在空值或非正数（转速、缸数、持续期、轨压须 > 0），请检查输入。');
+            return null;
+        }
+        if (isNaN(minVal) || isNaN(maxVal)) {
+            alert('⚠️ 请填写有效的扫描起始值和结束值。');
+            return null;
+        }
+        if (!(steps >= 2)) {
+            alert('⚠️ 扫描步数（数据点数量）至少需要 2，已自动修正为 2。');
+            document.getElementById('sweep_steps').value = 2;
+            steps = 2;
+        }
+        if (minVal >= maxVal) {
+            alert('⚠️ 扫描起始值必须小于结束值，请检查输入。');
+            return null;
+        }
+        if (['M4', 'M5', 'B3', 'E3'].includes(sweepVar) && minVal <= 0) {
+            alert('⚠️ 该扫描变量的起始值必须大于 0（否则 Qhyd 无意义）。');
+            return null;
+        }
+        return { base, sweepVar, minVal, maxVal, steps, label };
+    }
+
+    function sweepSeries(base, sweepVar, minVal, maxVal, steps) {
+        const xs = [], ys = [];
+        const delta = (maxVal - minVal) / (steps - 1);
+        for (let i = 0; i < steps; i++) {
+            const x = minVal + delta * i;
+            xs.push(Number(x.toFixed(2)));
+            const p = { ...base }; p[sweepVar] = x;
+            ys.push(Number(qOf(p).toFixed(4)));
+        }
+        return { xs, ys };
+    }
+
+    function executeSweepCalculation() {
+        const cfg = readSweepInputs();
+        if (!cfg) return;
+        const { base, sweepVar, minVal, maxVal, steps, label } = cfg;
+        const { xs, ys } = sweepSeries(base, sweepVar, minVal, maxVal, steps);
+
+        // 基准点：基准值落在扫描范围内才标记
+        let marker = null;
+        const bx = base[sweepVar];
+        if (bx >= minVal && bx <= maxVal) marker = { x: bx, y: Number(qOf(base).toFixed(4)) };
+
+        latestRunData = {
+            xLabel: label, xData: xs, yData: ys,
+            params: { ...base }, marker,
+            sweepConfig: { varCode: sweepVar, varName: label, min: minVal, max: maxVal, steps }
+        };
+        renderMainChart(latestRunData);
+        updateGauge();
+    }
+
+    function renderMainChart(run) {
+        const ctx = document.getElementById('qhydChart').getContext('2d');
+        if (currentChart) { currentChart.destroy(); }
+        const pts = run.xData.map((x, i) => ({ x, y: run.yData[i] }));
+        currentChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: '当前动态流道流量值 Qhyd',
+                    data: pts,
+                    borderColor: (c) => heatGradient(c.chart),
+                    pointBorderColor: (c) => heatGradient(c.chart),
+                    pointBackgroundColor: (c) => dk(c.chart) ? '#0b1220' : '#ffffff',
+                    borderWidth: 3, pointRadius: 3, pointBorderWidth: 2, pointHoverRadius: 5,
+                    cubicInterpolationMode: 'monotone', fill: false, glowColor: '#22d3ee'
+                }]
+            },
+            options: makeOptions({
+                xLabel: run.xLabel, xMin: run.xData[0], xMax: run.xData[run.xData.length - 1],
+                area: true, tooltip: false,
+                marker: run.marker ? { show: true, x: run.marker.x, y: run.marker.y, pulse: true } : { show: false }
+            })
+        });
+        revealChart(currentChart, 1100);
+    }
+
+    // ================= 暂存 / 合并 =================
+    function saveCurrentToWorkspace() {
+        if (!latestRunData) return;
+        if (isSaving) return;
+        isSaving = true;
+        setTimeout(() => { isSaving = false; }, 800);
+
+        cardCounter++;
+        const id = cardCounter;
+        const container = document.getElementById('workspaceContainer');
+
+        const card = document.createElement('div');
+        card.className = 'saved-card';
+        card.id = `saved_card_${id}`;
+
+        const p = latestRunData.params;
+        const config = latestRunData.sweepConfig;
+
+        const remarkHTML = `
+            <strong>[记录 #${id}] 扫描:</strong> ${config.varName} (${config.min}~${config.max})<br>
+            <strong>边界:</strong> 油耗:${p.M2} | 功率:${p.M3} | 转速:${p.M4} | 缸数:${p.M5} | 持续期:${p.B3}° | 轨压:${p.E3}bar
+        `;
+
+        card.innerHTML = `
+            <div class="card-top">
+                <div class="param-badge">${remarkHTML}</div>
+                <label class="checkbox-container">
+                    <input type="checkbox" class="compare-selector" data-id="${id}"> 对比
+                </label>
+            </div>
+            <div class="saved-chart-box">
+                <canvas id="saved_canvas_${id}"></canvas>
+            </div>
+            <div style="text-align: right;">
+                <button class="btn export-btn" style="padding:4px 10px; font-size:11px;" onclick="exportSingleChart(${id})">💾 导出此图 (内含参数)</button>
+            </div>
+        `;
+        container.appendChild(card);
+
+        dataWarehouse[id] = JSON.parse(JSON.stringify(latestRunData));
+
+        const sweepRangeStr = `${config.varName}:[${config.min}~${config.max},${config.steps}pts]`;
+        const fixedParams = [];
+        if (config.varCode !== 'M2') fixedParams.push(`油耗:${p.M2}`);
+        if (config.varCode !== 'M3') fixedParams.push(`功率:${p.M3}`);
+        if (config.varCode !== 'M4') fixedParams.push(`转速:${p.M4}`);
+        if (config.varCode !== 'B3') fixedParams.push(`持续期:${p.B3}°`);
+        if (config.varCode !== 'E3') fixedParams.push(`轨压:${p.E3}bar`);
+        dataWarehouse[id].summaryText = `[边界 #${id}] 扫描: ${sweepRangeStr} | 固定: ${fixedParams.join(' ')}`;
+
+        // 边界条件写进画布标题，导出 PNG 后必带信息
+        const embeddedCanvasTitle = [
+            `Qhyd 仿真快照记录 #${id} (扫描自变量: ${config.varName})`,
+            `固定边界条件: BSFC油耗:${p.M2}g/kWh | Power功率:${p.M3}kW | 基准Speed转速:${p.M4}rpm | 缸数:${p.M5} | CA持续期:${p.B3}°CA | RailP轨压:${p.E3}bar`
+        ];
+
+        const run = latestRunData;
+        const pts = run.xData.map((x, i) => ({ x, y: run.yData[i] }));
+        const ctx = document.getElementById(`saved_canvas_${id}`).getContext('2d');
+        savedChartInstances[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: `流量值 Qhyd (记录 #${id})`,
+                    data: pts,
+                    borderColor: (c) => heatGradient(c.chart),
+                    pointBorderColor: (c) => heatGradient(c.chart),
+                    pointBackgroundColor: (c) => dk(c.chart) ? '#0b1220' : '#ffffff',
+                    borderWidth: 2.5, pointRadius: 2, pointBorderWidth: 1.5,
+                    cubicInterpolationMode: 'monotone', fill: false, glowColor: '#22d3ee'
+                }]
+            },
+            options: makeOptions({
+                xLabel: run.xLabel, xMin: run.xData[0], xMax: run.xData[run.xData.length - 1],
+                titleLines: embeddedCanvasTitle, titleFont: { size: 10, weight: 'normal' },
+                area: true, tooltip: false,
+                marker: run.marker ? { show: true, x: run.marker.x, y: run.marker.y, pulse: false } : { show: false }
+            })
+        });
+        revealChart(savedChartInstances[id], 900);
+
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function makeMergedDataset(label, xData, yData, index, thick) {
+        const pal = isDark ? PAL_DARK : PAL_LIGHT;
+        const color = pal[index % pal.length];
+        return {
+            label, ci: index,
+            data: xData.map((x, i) => ({ x, y: yData[i] })),
+            borderColor: color, glowColor: color,
+            // 数据点颜色按当前绘制主题实时取色（深色/浅色/导出），避免与曲线颜色不一致
+            pointBackgroundColor: (c) => { const p = dk(c.chart) ? PAL_DARK : PAL_LIGHT; return p[c.dataset.ci % p.length]; },
+            pointBorderColor: (c) => { const p = dk(c.chart) ? PAL_DARK : PAL_LIGHT; return p[c.dataset.ci % p.length]; },
+            borderWidth: thick ? 4 : 2.5, pointRadius: thick ? 3 : 2,
+            cubicInterpolationMode: 'monotone', fill: false
+        };
+    }
+
+    function buildMergedChart(spec) {
+        const mergedSection = document.getElementById('mergedSection');
+        mergedSection.style.display = 'block';
+        const ctx = document.getElementById('mergedChartCanvas').getContext('2d');
+        if (mergedChartInstance) { mergedChartInstance.destroy(); }
+        mergedChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: { datasets: spec.datasets },
+            options: makeOptions({
+                xLabel: spec.xLabel, xMin: spec.xMin, xMax: spec.xMax,
+                titleLines: spec.titleLines, titleFont: { size: 11, weight: 'normal', family: 'monospace' },
+                legendFont: { size: 11 }, tooltip: true,
+                marker: spec.marker ? { show: true, x: spec.marker.x, y: spec.marker.y, pulse: true, solid: true } : { show: false }
+            })
+        });
+        revealChart(mergedChartInstance, 1200);
+        mergedSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function mergeSelectedCharts() {
+        const checkboxes = document.querySelectorAll('.compare-selector:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
+
+        if (selectedIds.length < 2) {
+            alert("⚠️ 提示：请至少在下方的图表仓库中勾选 2 个或更多的图表再执行合并对比！");
+            return;
+        }
+
+        // 轴平衡交叉性安全审查
+        const baselineId = selectedIds[0];
+        const baseVarCode = dataWarehouse[baselineId].sweepConfig.varCode;
+        const baseLength = dataWarehouse[baselineId].xData.length;
+        const baseFirstX = dataWarehouse[baselineId].xData[0];
+        const baseLastX = dataWarehouse[baselineId].xData[baseLength - 1];
+
+        for (let i = 1; i < selectedIds.length; i++) {
+            const checkId = selectedIds[i];
+            const target = dataWarehouse[checkId];
+            if (target.sweepConfig.varCode !== baseVarCode) {
+                alert(`❌ 无法合并！[记录 #${checkId}] 的扫描自变量为 "${target.sweepConfig.varName}"，与基础图表的 "${dataWarehouse[baselineId].sweepConfig.varName}" 属于不同物理量，无法建立统一横轴！`);
+                return;
+            }
+            const eps = 1e-6;
+            const targetLastX = target.xData[target.xData.length - 1];
+            if (target.xData.length !== baseLength ||
+                Math.abs(target.xData[0] - baseFirstX) > eps ||
+                Math.abs(targetLastX - baseLastX) > eps) {
+                alert(`❌ 无法合并！[记录 #${checkId}] 的扫描范围或离散步数与其它勾选项不同，横向坐标轴刻度无法完全对准。\n` +
+                      `(当前: ${target.xData[0]}~${targetLastX}, ${target.xData.length}点  vs  基准: ${baseFirstX}~${baseLastX}, ${baseLength}点)`);
+                return;
+            }
+        }
+
+        const titleLines = [
+            `Qhyd 多边界参数重叠对比图 (扫描自变量: ${dataWarehouse[baselineId].sweepConfig.varName})`,
+            `各对比曲线对应的边界参数定义分别如下：`
+        ];
+        const datasets = selectedIds.map((id, index) => {
+            const rec = dataWarehouse[id];
+            titleLines.push(`  • [曲线 #${id}]: ${rec.summaryText}`);
+            return makeMergedDataset(`曲线 #${id} -> [${rec.summaryText}]`, rec.xData, rec.yData, index, false);
+        });
+
+        buildMergedChart({
+            datasets, titleLines,
+            xLabel: dataWarehouse[baselineId].xLabel,
+            xMin: baseFirstX, xMax: baseLastX
+        });
+    }
+
+    // ================= 曲线族自动对比 =================
+    function describeParams(base, exclude) {
+        return Object.keys(PARAM_META)
+            .filter(k => !exclude.includes(k))
+            .map(k => `${PARAM_META[k].short}:${base[k]}${PARAM_META[k].unit}`)
+            .join(' ');
+    }
+
+    function syncFamilyOptions() {
+        const sv = document.getElementById('sweep_var').value;
+        const sel = document.getElementById('fam_var');
+        Array.from(sel.options).forEach(o => { o.disabled = (o.value === sv); });
+        if (sel.value === sv) {
+            const pick = (sv === 'E3') ? 'B3' : 'E3';
+            sel.value = pick;
+            document.getElementById('fam_values').value = FAMILY_META[pick].def;
+        }
+    }
+    function onFamVarChange() {
+        const v = document.getElementById('fam_var').value;
+        document.getElementById('fam_values').value = FAMILY_META[v].def;
+    }
+
+    function generateFamily() {
+        const cfg = readSweepInputs();
+        if (!cfg) return;
+        const { base, sweepVar, minVal, maxVal, steps, label } = cfg;
+        const famVar = document.getElementById('fam_var').value;
+        if (famVar === sweepVar) {
+            alert('⚠️ 族变量不能与扫描自变量相同，请更换族变量。');
+            return;
+        }
+        let values = document.getElementById('fam_values').value.split(/[,，;；\s]+/)
+            .map(s => parseFloat(s)).filter(v => isFinite(v));
+        values = values.filter((v, i) => values.indexOf(v) === i);
+        if (values.length < 1) {
+            alert('⚠️ 请在取值列表中填写至少 1 个有效数值（用逗号分隔）。');
+            return;
+        }
+        if (values.some(v => v <= 0)) {
+            alert('⚠️ 取值列表中的数值必须大于 0。');
+            return;
+        }
+        if (values.length > 8) {
+            alert('⚠️ 最多支持 8 条曲线，已取前 8 个值。');
+            values = values.slice(0, 8);
+        }
+
+        const meta = FAMILY_META[famVar];
+        const xs = sweepSeries(base, sweepVar, minVal, maxVal, steps).xs;
+        const datasets = values.map((v, i) => {
+            const p = { ...base }; p[famVar] = v;
+            const ys = sweepSeries(p, sweepVar, minVal, maxVal, steps).ys;
+            const isBase = Math.abs(v - base[famVar]) < 1e-9;
+            const name = `${meta.name} = ${v}${meta.unit ? ' ' + meta.unit : ''}${isBase ? '（基准）' : ''}`;
+            return makeMergedDataset(name, xs, ys, i, isBase);
+        });
+
+        const titleLines = [
+            `Qhyd 曲线族对比：族变量 ${meta.name}（${values.join(' / ')}）`,
+            `横轴扫描 ${label} [${minVal}~${maxVal}, ${steps}pts] | 固定: ${describeParams(base, [sweepVar, famVar])}`
+        ];
+        // 基准点：基准参数在扫描变量上的位置（落在扫描范围内才标记），与主图一致
+        let marker = null;
+        const bx = base[sweepVar];
+        if (bx >= minVal && bx <= maxVal) marker = { x: bx, y: Number(qOf(base).toFixed(4)) };
+
+        buildMergedChart({ datasets, titleLines, marker, xLabel: label, xMin: xs[0], xMax: xs[xs.length - 1] });
+    }
+
+    // ================= 导出 / 清空 =================
+    function exportMergedChart() {
+        exportChartPNG(mergedChartInstance, 'Qhyd_多曲线融合叠加对比报告图(白色底).png');
+    }
+    function exportSingleChart(id) {
+        exportChartPNG(savedChartInstances[id], `Qhyd_边界单图记录_#${id}(白色底).png`);
+    }
+
+    function clearWorkspace() {
+        if (confirm("确定要彻底清空存储仓库以及合并对比画布吗？")) {
+            Object.values(savedChartInstances).forEach(c => c.destroy());
+            document.getElementById('workspaceContainer').innerHTML = '';
+            document.getElementById('mergedSection').style.display = 'none';
+            if (mergedChartInstance) { mergedChartInstance.destroy(); mergedChartInstance = null; }
+            dataWarehouse = {};
+            savedChartInstances = {};
+            cardCounter = 0;
+        }
+    }
+
+    // ===== Excel 导入：从客户输入表读取基准参数 =====
+    function cellText(ws, addr) {
+        const c = ws[addr];
+        if (!c || c.v === undefined || c.v === null) return '';
+        return String(c.v).trim();
+    }
+    function allNumbers(str) {
+        return (str.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+    }
+    function parseNozzleCells(txt) {
+        // B11：kW 前面的数字，如 "140 kW @ 3000rpm" → 140
+        const pm = txt.B11.match(/(\d+(?:\.\d+)?)\s*kW/i);
+        // B11：rpm 前面的数字 → 3000
+        const sm = txt.B11.match(/(\d+(?:\.\d+)?)\s*rpm/i);
+        // B15：数字部分，如 "225 g/kWh" → 225
+        const bsfc = allNumbers(txt.B15)[0];
+        // B7：第二个数字，如 "4 \ 8" → 8
+        const cyl = allNumbers(txt.B7)[1];
+        // B27：数字部分，如 "1800bar" → 1800
+        const rail = allNumbers(txt.B27)[0];
+        return {
+            M4: sm ? parseFloat(sm[1]) : null,
+            M3: pm ? parseFloat(pm[1]) : null,
+            M2: bsfc !== undefined ? bsfc : null,
+            M5: cyl !== undefined ? cyl : null,
+            E3: rail !== undefined ? rail : null
+        };
+    }
+
+    function handleExcelImport(input) {
+        const file = input.files && input.files[0];
+        const box = document.getElementById('excel_import_status');
+        const show = (html, kind) => {
+            box.style.display = 'block';
+            box.className = 'notice ' + kind;
+            box.style.display = 'block';
+            box.innerHTML = html;
+        };
+        if (!file) return;
+        if (typeof XLSX === 'undefined') {
+            show('❌ Excel 解析库未加载（需要联网访问 cdn.jsdelivr.net），请检查网络后刷新页面。', 'err');
+            input.value = '';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onerror = () => show('❌ 文件读取失败，请重试。', 'err');
+        reader.onload = (e) => {
+            try {
+                const wb = XLSX.read(e.target.result, { type: 'array' });
+                const ws = wb.Sheets[wb.SheetNames[0]];
+                const txt = {};
+                ['B7', 'B11', 'B15', 'B27'].forEach(a => { txt[a] = cellText(ws, a); });
+                const r = parseNozzleCells(txt);
+
+                const items = [
+                    { key: 'M3', id: 'base_M3', name: 'Power功率', unit: 'kW',    cell: 'B11' },
+                    { key: 'M4', id: 'base_M4', name: 'Speed转速',  unit: 'rpm',   cell: 'B11' },
+                    { key: 'M2', id: 'base_M2', name: 'BSFC油耗',  unit: 'g/kWh', cell: 'B15' },
+                    { key: 'M5', id: 'base_M5', name: '缸数',       unit: '',      cell: 'B7'  },
+                    { key: 'E3', id: 'base_E3', name: 'RailP轨压',  unit: 'bar',   cell: 'B27' }
+                ];
+                const lines = [];
+                let okCount = 0;
+                items.forEach(it => {
+                    if (r[it.key] !== null) {
+                        document.getElementById(it.id).value = r[it.key];
+                        okCount++;
+                        lines.push(`✅ ${it.name} = <b>${r[it.key]}</b> ${it.unit}　<span style="opacity:.7">(来自 ${it.cell}："${txt[it.cell]}")</span>`);
+                    } else {
+                        lines.push(`⚠️ ${it.name}：未能从 ${it.cell}（"${txt[it.cell] || '空'}"）解析出数值，保持原值不变`);
+                    }
+                });
+                show(`<b>已读取《${file.name}》第一个工作表：</b><br>` + lines.join('<br>'), okCount === items.length ? 'ok' : 'warn');
+
+                if (okCount > 0) {
+                    updateBaseQhyd();
+                    executeSweepCalculation();   // 用新基准值刷新主图
+                }
+            } catch (err) {
+                show('❌ 解析 Excel 失败：' + err.message, 'err');
+            }
+            input.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function updateBaseQhyd() {
+        const b = readBase();
+        const el = document.getElementById('base_qhyd_display');
+        if (!baseIsValid(b)) {
+            lastBaseQ = null;
+            if (kpiAnim) { cancelAnimationFrame(kpiAnim); kpiAnim = null; }
+            el.dataset.val = '';
+            el.textContent = '—';
+            updateGauge();
+            return;
+        }
+        const q = qOf(b);
+        if (!isFinite(q)) {
+            lastBaseQ = null;
+            el.dataset.val = '';
+            el.textContent = '—';
+            updateGauge();
+            return;
+        }
+        lastBaseQ = q;
+        animateNumber(el, q);
+        updateGauge();
+    }
+
+    window.onload = function () {
+        let dark = true;
+        try { if (localStorage.getItem('qhyd_theme') === 'light') dark = false; } catch (e) {}
+        setTheme(dark);
+
+        ['base_M2', 'base_M3', 'base_M4', 'base_M5', 'base_B3', 'base_E3'].forEach(id => {
+            document.getElementById(id).addEventListener('input', updateBaseQhyd);
+        });
+        updateBaseQhyd();
+        // 仅同步转速提示与族变量选项，不覆盖页面设定的默认扫描范围（20~35，16 步）
+        document.getElementById('speed_hint').style.display =
+            (document.getElementById('sweep_var').value === 'M4') ? 'block' : 'none';
+        syncFamilyOptions();
+        executeSweepCalculation();   // 页面打开即把主图画在"当前实时仿真沙盒图表"中
+        requestAnimationFrame(pulseLoop);
+    };
+</script>
+
+<script id="spray_core_src">
+/* ===== SprayCore：俯视 + 正视多孔喷雾 2D 求解器（v9）=====
+ * 俯视图（Top X-Y）：2D Stable Fluids + 半经验喷雾标定求解器；
+ * 正视图（Front X-Z）：基于同一时刻的各孔实时贯距、喷雾锥角、垂直夹角 Vert Ang、旋转角 Rot、
+ *                       轨压/背压密度比与速度剖面进行 3D→X-Z 平面投影合成，与俯视图严格同步。
+ */
+(function (root) {
+  'use strict';
+
+  const MAX_HOLES = 12;
+  const K_MIN = -5.0, K_MAX = 8.0;
+  const FUEL_DENSITY = 830.0;
+  const DT = 0.08;
+  const HOLE_RND = [0.2501909332093339, 0.794427601939151, 0.551371380490387, -0.5495856200188163,
+    -0.3996674301775491, 0.7471068907925238, -0.9894693908688506, 0.6424568367655326,
+    0.5941388575040925, -0.06413009431255845, -0.3939351463613729, -0.4431487757984534];
+
+  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+
+  function derived(P) {
+    const kNorm = clamp((P.k_factor - K_MIN) / (K_MAX - K_MIN), 0, 1);
+    const dP = Math.max(P.inj_pressure_bar - P.cyl_pressure_bar, 1.0);
+    const gasRho = Math.max(P.cyl_pressure_bar, 1.0) * 1e5 / (287.0 * 800.0);
+    const pNorm = clamp((P.inj_pressure_bar - 400.0) / 1800.0, 0, 1);
+    const cd = clamp(0.66 + 0.20 * kNorm, 0.58, 0.90);
+
+    const densRatio = Math.max(gasRho / FUEL_DENSITY, 1e-4);
+    const cone = clamp(24.0 * Math.pow(densRatio / 0.045, 0.20) * (1.35 - 0.65 * kNorm) * (1.05 - 0.10 * pNorm), 6.0, 38.0);
+
+    const dm = Math.max(P.diameter_mm * 1e-3, 1e-5);
+    const curr = cd * Math.pow(dP * 1e5 / gasRho, 0.25) * Math.sqrt(dm);
+    const refRho = (100.0 * 1e5) / (287.0 * 800.0);
+    const refK = clamp((1.3 - K_MIN) / (K_MAX - K_MIN), 0, 1);
+    const refCd = clamp(0.66 + 0.20 * refK, 0.58, 0.90);
+    const ref = refCd * Math.pow(1500.0 * 1e5 / refRho, 0.25) * Math.sqrt(0.135e-3);
+    const pScale = clamp(Math.pow(curr / Math.max(ref, 1e-12), 0.85), 0.45, 2.20);
+
+    const nH = Math.max(Math.round(P.num_holes), 1);
+    const totalFlow = (P.flow_ml_30s_100bar / 30.0) * Math.sqrt(dP / 100.0);
+    const singleFlow = totalFlow / nH;
+    const flowFactor = clamp(Math.pow(singleFlow / ((475.0 / 30.0) / 8.0), 0.35), 0.55, 1.65);
+
+    const dM = Math.max(P.diameter_mm * 1e-3, 1e-6);
+    const area = 0.25 * Math.PI * dM * dM;
+    const qSingle100 = ((P.flow_ml_30s_100bar / 30.0) / nH) * 1e-6;
+    const uIdeal = Math.sqrt(2.0 * 100.0 * 1e5 / FUEL_DENSITY);
+    const cdEq = qSingle100 / Math.max(area * uIdeal, 1e-12);
+
+    const durMs = Math.max(P.inj_duration_ca, 0) / (0.006 * Math.max(P.engine_rpm, 1));
+    const maxInjSteps = Math.max(1, Math.round(durMs / Math.max(DT * 0.25, 1e-4)));
+    const hf = Math.max(Math.abs(Math.sin(P.vert_angle_deg * Math.PI / 180)), 0.05);
+    const vf = Math.cos(P.vert_angle_deg * Math.PI / 180);
+
+    return { kNorm, dP, gasRho, pNorm, cd, cone, pScale, singleFlow, totalFlow, flowFactor,
+             cdEq, durMs, maxInjSteps, hf, vf, nH };
+  }
+
+  function holeAngles(P) {
+    const n = Math.max(Math.round(P.num_holes), 1);
+    const pitch = 2 * Math.PI / n;
+    const az0 = 270 * Math.PI / 180 - 0.5 * pitch + P.rot_deg * Math.PI / 180;
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) out[i] = az0 - i * pitch;
+    return out;
+  }
+  function holeFactors(P) {
+    const n = Math.max(Math.round(P.num_holes), 1);
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) out[i] = 1.0 + (P.hole_scatter_pct / 100.0) * HOLE_RND[i];
+    return out;
+  }
+
+  class Sim {
+    constructor(P, N) {
+      this.P = P;
+      this.N = N | 0;
+      this.fieldMM = 48.0;
+      this.cellMM = this.fieldMM / this.N;
+      this.s = this.cellMM / 0.1;
+      this.iter = 10;
+      this.dp = derived(P);
+      this.angles = holeAngles(P);
+      this.factors = holeFactors(P);
+      this.ringCells = 8.0 / this.s;
+      this.coreCells = 6.0 / this.s;
+      this.cx = (this.N - 1) / 2;
+      this.cy = (this.N - 1) / 2;
+
+      const n2 = this.N * this.N;
+      const mk = () => new Float32Array(n2);
+      this.u = mk(); this.v = mk(); this.up = mk(); this.vp = mk();
+      this.fuel = mk(); this.fp = mk();
+      this.tmp = mk(); this.s1 = mk(); this.s2 = mk(); this.s3 = mk();
+
+      const solid = [];
+      for (let j = 0; j < this.N; j++) for (let i = 0; i < this.N; i++) {
+        const dx = i - this.cx, dy = j - this.cy;
+        if (dx * dx + dy * dy < this.coreCells * this.coreCells) solid.push(j * this.N + i);
+      }
+      this.solid = Int32Array.from(solid);
+      this.stepIdx = 0;
+    }
+
+    reset() {
+      for (const a of [this.u, this.v, this.up, this.vp, this.fuel, this.fp, this.tmp]) a.fill(0);
+      this.stepIdx = 0;
+    }
+
+    setBnd(b, f) {
+      const N = this.N;
+      for (let j = 0; j < N; j++) {
+        const o = j * N;
+        f[o] = (b === 1) ? -f[o + 1] : f[o + 1];
+        f[o + N - 1] = f[o + N - 2];
+      }
+      const last = (N - 1) * N, prev = (N - 2) * N;
+      for (let i = 0; i < N; i++) { f[i] = f[N + i]; f[last + i] = f[prev + i]; }
+      if (b === 1 || b === 2) { const sl = this.solid; for (let q = 0; q < sl.length; q++) f[sl[q]] = 0; }
+    }
+
+    linSolve(b, x, x0, a, c) {
+      const N = this.N, inv = 1.0 / c;
+      let src = x, dst = this.tmp;
+      for (let it = 0; it < this.iter; it++) {
+        for (let j = 1; j < N - 1; j++) {
+          let k = j * N + 1;
+          for (let i = 1; i < N - 1; i++, k++) {
+            dst[k] = (x0[k] + a * (src[k - 1] + src[k + 1] + src[k - N] + src[k + N])) * inv;
+          }
+        }
+        this.setBnd(b, dst);
+        const t = src; src = dst; dst = t;
+      }
+      if (src !== x) x.set(src);
+    }
+
+    diffuse(b, x, x0, rate) {
+      const a = DT * rate * 118.0 * 118.0 / (this.s * this.s);
+      this.linSolve(b, x, x0, a, 1.0 + 4.0 * a);
+    }
+
+    advect(b, d, d0, uu, vv) {
+      const N = this.N, dt0 = DT * 118.0 / this.s;
+      const hi = N - 1.5;
+      for (let j = 1; j < N - 1; j++) {
+        let k = j * N + 1;
+        for (let i = 1; i < N - 1; i++, k++) {
+          let x = i - dt0 * uu[k], y = j - dt0 * vv[k];
+          x = x < 0.5 ? 0.5 : (x > hi ? hi : x);
+          y = y < 0.5 ? 0.5 : (y > hi ? hi : y);
+          const i0 = x | 0, j0 = y | 0;
+          const s1 = x - i0, s0 = 1.0 - s1, t1 = y - j0, t0 = 1.0 - t1;
+          const q = j0 * N + i0;
+          d[k] = s0 * (t0 * d0[q] + t1 * d0[q + N]) + s1 * (t0 * d0[q + 1] + t1 * d0[q + N + 1]);
+        }
+      }
+      this.setBnd(b, d);
+    }
+
+    project(u, v, p, div) {
+      const N = this.N, h = 1.0 / 120.0;
+      for (let j = 1; j < N - 1; j++) {
+        let k = j * N + 1;
+        for (let i = 1; i < N - 1; i++, k++) {
+          div[k] = -0.5 * h * (u[k + 1] - u[k - 1] + v[k + N] - v[k - N]);
+        }
+      }
+      p.fill(0);
+      this.setBnd(0, div);
+      this.setBnd(0, p);
+      this.linSolve(0, p, div, 1.0, 4.0);
+      for (let j = 1; j < N - 1; j++) {
+        let k = j * N + 1;
+        for (let i = 1; i < N - 1; i++, k++) {
+          u[k] -= 0.5 * (p[k + 1] - p[k - 1]) / h;
+          v[k] -= 0.5 * (p[k + N] - p[k - N]) / h;
+        }
+      }
+      this.setBnd(1, u);
+      this.setBnd(2, v);
+    }
+
+    vorticity(strength) {
+      const N = this.N, u = this.u, v = this.v;
+      const curl = this.s1, ac = this.s2;
+      curl.fill(0); ac.fill(0);
+      for (let j = 1; j < N - 1; j++) {
+        let k = j * N + 1;
+        for (let i = 1; i < N - 1; i++, k++) {
+          const c = 0.5 * ((v[k + 1] - v[k - 1]) - (u[k + N] - u[k - N]));
+          curl[k] = c; ac[k] = Math.abs(c);
+        }
+      }
+      const f = DT * strength * this.s;
+      for (let j = 2; j < N - 2; j++) {
+        let k = j * N + 2;
+        for (let i = 2; i < N - 2; i++, k++) {
+          const gx = 0.5 * (ac[k + 1] - ac[k - 1]);
+          const gy = 0.5 * (ac[k + N] - ac[k - N]);
+          const mag = Math.sqrt(gx * gx + gy * gy) + 1e-6;
+          const c = curl[k];
+          u[k] += f * (gy / mag) * c;
+          v[k] -= f * (gx / mag) * c;
+        }
+      }
+    }
+
+    inject(step) {
+      const P = this.P, dp = this.dp;
+      if (!(step < dp.maxInjSteps)) return;
+      const N = this.N, s = this.s;
+      const holeNorm = clamp((dp.nH - 1) / 11.0, 0, 1);
+      const kn = dp.kNorm, pN = dp.pNorm;
+      const hwOld = 0.9 + (P.diameter_mm - 0.08) * 14.0;
+      const baseSpeed = 3.2 * dp.pScale * (0.85 + 0.30 * dp.flowFactor) * dp.hf;
+      const spreadHalf = (0.5 * dp.cone) * Math.PI / 180;
+      const turb = (0.07 + 0.06 * pN) * (1.15 - 0.75 * kn);
+      const coreBase = (0.80 + 0.32 * kn) * (0.90 + 0.55 * P.diameter_mm) * (0.88 + 0.24 * pN)
+        * (0.82 + 0.35 * dp.flowFactor + 0.10 * holeNorm);
+      const profPow = P.k_factor > 0 ? 0.6 : 1.2;
+      const win = Math.ceil(hwOld / s + 6.0 / s) + 1;
+      const m = s > 1.001 ? 4 : 1;
+
+      for (let h = 0; h < this.angles.length; h++) {
+        const th = this.angles[h], fac = this.factors[h];
+        const dx = Math.cos(th), dy = Math.sin(th), px = -dy, py = dx;
+        const ox = this.cx + this.ringCells * dx, oy = this.cy + this.ringCells * dy;
+        const x0 = Math.max(1, Math.trunc(ox) - win), x1 = Math.min(N - 1, Math.trunc(ox) + win + 1);
+        const y0 = Math.max(1, Math.trunc(oy) - win), y1 = Math.min(N - 1, Math.trunc(oy) + win + 1);
+        const speed = baseSpeed * fac;
+        for (let j = y0; j < y1; j++) {
+          for (let i = x0; i < x1; i++) {
+            let cnt = 0, sP = 0, sU = 0, sV = 0;
+            for (let sy = 0; sy < m; sy++) {
+              for (let sx = 0; sx < m; sx++) {
+                const gx = (i - ox + ((sx + 0.5) / m - 0.5)) * s, gy = (j - oy + ((sy + 0.5) / m - 0.5)) * s;
+                const sOld = gx * dx + gy * dy;
+                const rOld = gx * px + gy * py;
+                if (sOld < 0.0 || sOld > 3.5 || Math.abs(rOld) > hwOld) continue;
+                const rr = clamp(rOld / Math.max(hwOld, 1e-5), -1, 1);
+                const prof = Math.pow(Math.cos(0.45 * Math.PI * rr), profPow);
+                const jit = turb * Math.sin(step * (0.65 + 0.5 * pN) + rOld * 2.1 + 1.7 * h);
+                const la = th + rr * spreadHalf + jit;
+                cnt++; sP += prof; sU += prof * Math.cos(la); sV += prof * Math.sin(la);
+              }
+            }
+            if (cnt === 0) continue;
+            const w = cnt / (m * m), k = j * N + i;
+            this.u[k] = (1 - 0.35 * w) * this.u[k] + 0.35 * w * speed * (sU / cnt);
+            this.v[k] = (1 - 0.35 * w) * this.v[k] + 0.35 * w * speed * (sV / cnt);
+            const fv = coreBase * (0.5 + 0.5 * fac) * (sP / cnt) * w;
+            if (fv > this.fuel[k]) this.fuel[k] = fv;
+          }
+        }
+      }
+    }
+
+    step() {
+      const dp = this.dp, kn = dp.kNorm, pN = dp.pNorm;
+      this.inject(this.stepIdx);
+
+      const effVisc = 1.2e-4 * (1.4 - 0.7 * kn);
+      const effDiff = 4.0e-5 * (1.6 - 0.9 * kn) * (0.85 + 0.45 * pN);
+
+      this.diffuse(1, this.up, this.u, effVisc);
+      this.diffuse(2, this.vp, this.v, effVisc);
+      this.project(this.up, this.vp, this.u, this.v);
+
+      this.advect(1, this.u, this.up, this.up, this.vp);
+      this.advect(2, this.v, this.vp, this.up, this.vp);
+      this.project(this.u, this.v, this.up, this.vp);
+
+      this.vorticity((0.25 + 0.18 * (1.0 - kn)) * (0.75 + 0.55 * pN));
+      this.setBnd(1, this.u);
+      this.setBnd(2, this.v);
+
+      this.diffuse(0, this.fp, this.fuel, effDiff);
+      this.advect(0, this.fuel, this.fp, this.u, this.v);
+      const decay = 0.996 - 0.0025 * pN, F = this.fuel;
+      for (let k = 0; k < F.length; k++) F[k] *= decay;
+      for (let q = 0; q < this.solid.length; q++) F[this.solid[q]] = 0;
+      this.stepIdx++;
+    }
+
+    penetrations(thr) {
+      thr = thr || 0.08;
+      const n = this.angles.length, N = this.N, cell = this.cellMM;
+      const pens = new Float32Array(n), tips = new Float32Array(2 * n);
+      const ringMM = 0.8;
+      const smax = Math.floor(this.fieldMM / 2 / 0.1 - 3 - 8);
+      for (let h = 0; h < n; h++) {
+        const dx = Math.cos(this.angles[h]), dy = Math.sin(this.angles[h]);
+        let best = 0;
+        for (let q = 0; q < smax; q++) {
+          const rMM = ringMM + q * 0.1;
+          let hit = false;
+          for (let o = -3; o <= 3 && !hit; o++) {
+            const xm = rMM * dx + o * 0.1 * (-dy), ym = rMM * dy + o * 0.1 * dx;
+            const xi = Math.round(this.cx + xm / cell), yi = Math.round(this.cy + ym / cell);
+            if (xi < 0 || yi < 0 || xi >= N || yi >= N) continue;
+            if (this.fuel[yi * N + xi] >= thr) hit = true;
+          }
+          if (hit) best = q;
+        }
+        pens[h] = best * 0.1;
+        const r = ringMM + best * 0.1;
+        tips[2 * h] = r * dx; tips[2 * h + 1] = r * dy;
+      }
+      return { pens, tips };
+    }
+
+    snapshot() {
+      const F = this.fuel, n2 = F.length, q = new Uint8Array(n2);
+      for (let k = 0; k < n2; k++) {
+        let t = F[k] / 0.72; t = t < 0 ? 0 : (t > 1 ? 1 : t);
+        q[k] = Math.round(255 * Math.sqrt(t));
+      }
+      const r = this.penetrations(0.08);
+      return { step: this.stepIdx, q, pens: r.pens, tips: r.tips };
+    }
+  }
+
+  root.SprayCore = { Sim, derived, holeAngles, holeFactors, MAX_HOLES, K_MIN, K_MAX, DT };
+})(typeof self !== 'undefined' ? self : globalThis);
+</script>
+<script>
+    // ================= 顶部标签页 =================
+    function switchTab(name) {
+        ['flow', 'spray', 'nozzle'].forEach(n => {
+            document.getElementById('tab_' + n).style.display = (n === name) ? '' : 'none';
+            document.getElementById('tabbtn_' + n).classList.toggle('active', n === name);
+        });
+        if (name === 'flow') { try { allCharts().forEach(c => c.resize()); } catch (e) {} }
+        if (name === 'spray' && window.Spray) window.Spray.onShow();
+        if (name === 'nozzle' && window.NozzleTool) window.NozzleTool.onShow();
+    }
+
+    // ================= 喷雾仿真模块（支持俯视 Top X-Y + 正视 Front X-Z） =================
+    window.Spray = (function () {
+        'use strict';
+        const $ = (id) => document.getElementById(id);
+        const Core = window.SprayCore;
+        const FIELD_MM = 48;
+
+        const SPECS = [
+            { key: 'diam', attr: 'diameter_mm',        label: '孔径 Diam (mm)',           min: 0.08, max: 0.35, step: 0.001, dec: 3 },
+            { key: 'kfac', attr: 'k_factor',           label: 'K 系数 (/10µm)',           min: -5,   max: 8,    step: 0.1,   dec: 1 },
+            { key: 'pinj', attr: 'inj_pressure_bar',   label: '喷射压力 P_inj (bar)',     min: 400,  max: 2200, step: 10,    dec: 0 },
+            { key: 'vang', attr: 'vert_angle_deg',     label: '喷孔夹角 Vert Ang (°)',    min: -90,  max: 120,  step: 0.5,   dec: 1 },
+            { key: 'hole', attr: 'num_holes',          label: '孔数 Holes (N)',           min: 1,    max: 12,   step: 1,     dec: 0, int: true },
+            { key: 'flow', attr: 'flow_ml_30s_100bar', label: '台架流量 Q100 (ml/30s)',   min: 50,   max: 1500, step: 1,     dec: 0 },
+            { key: 'rpm',  attr: 'engine_rpm',         label: '转速 RPM (r/min)',         min: 600,  max: 4500, step: 10,    dec: 0 },
+            { key: 'dur',  attr: 'inj_duration_ca',    label: '喷油持续期 Inj Dur (°CA)', min: 2,    max: 45,   step: 0.5,   dec: 1 },
+            { key: 'scat', attr: 'hole_scatter_pct',   label: '孔间离散 Scatter (±%)',    min: 0,    max: 20,   step: 0.5,   dec: 1 },
+            { key: 'rot',  attr: 'rot_deg',            label: '整体旋转 Rot (°)',         min: -180, max: 180,  step: 1,     dec: 1 }
+        ];
+        const DEFAULTS = {
+            A: { diam: 0.135, kfac: 1.3, pinj: 1600, vang: 75, hole: 8, flow: 475, rpm: 3000, dur: 27, scat: 0, rot: 0 },
+            B: { diam: 0.181, kfac: 1.3, pinj: 1600, vang: 75, hole: 8, flow: 850, rpm: 3000, dur: 27, scat: 0, rot: 0 }
+        };
+        const SIDES = ['A', 'B'];
+        const ACCENT = { A: '#0e7490', B: '#c2410c' };
+        const TINT = { A: [0.62, 0.95, 0.90], B: [1.0, 0.80, 0.50] };
+        const specOf = (k) => SPECS.find(s => s.key === k);
+        const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+
+        const S = {
+            page: 1, running: false, step: 0, token: 0, N: 320,
+            viewMode: 'both', frontElev: 30, // 'both' | 'top' | 'front'
+            P: { A: null, B: null }, dp: { A: null, B: null }, angles: { A: null, B: null },
+            frames: [], view: -1, replayTimer: null, busy: false, engines: null, localMode: false, recordedGrid: 320
+        };
+
+        // ---------- 视角切换 ----------
+        function setViewMode(mode) {
+            S.viewMode = mode;
+            ['both', 'top', 'front'].forEach(m => {
+                const btn = $('sp_vm_' + m);
+                if (btn) btn.classList.toggle('active', m === mode);
+            });
+            SIDES.forEach(side => {
+                const pair = $('sp_pair_' + side);
+                const topBox = $('sp_box_' + side + '_top');
+                const frontBox = $('sp_box_' + side + '_front');
+                if (!pair || !topBox || !frontBox) return;
+                pair.classList.toggle('both', mode === 'both');
+                topBox.style.display = (mode === 'both' || mode === 'top') ? '' : 'none';
+                frontBox.style.display = (mode === 'both' || mode === 'front') ? '' : 'none';
+            });
+            if (S.page === 2) showFrame(S.view);
+        }
+
+        // ---------- 参数输入 ----------
+        function fmtVal(spec, v) { return Number(v).toFixed(spec.dec); }
+        function el(side, key) { return $('sp_' + side + '_' + key); }
+        function getVal(side, key) {
+            const e = el(side, key), spec = specOf(key);
+            let v = parseFloat(e.value);
+            if (!Number.isFinite(v)) v = parseFloat(e.dataset.last);
+            // 输入框被清空或粘贴了非数字时，回退到该工况默认值，避免 NaN 进入计算与绘图
+            if (!Number.isFinite(v)) v = DEFAULTS[side][key];
+            v = clamp(v, spec.min, spec.max);
+            return spec.int ? Math.round(v) : v;
+        }
+        function setVal(side, key, v, flash) {
+            const spec = specOf(key), e = el(side, key);
+            v = clamp(v, spec.min, spec.max); if (spec.int) v = Math.round(v);
+            e.value = fmtVal(spec, v); e.dataset.last = String(v);
+            if (flash) { e.classList.remove('sp-flash'); void e.offsetWidth; e.classList.add('sp-flash'); }
+        }
+        function readP(side) {
+            const P = { cyl_pressure_bar: 100 };
+            SPECS.forEach(s => { P[s.attr] = getVal(side, s.key); });
+            return P;
+        }
+        function buildCards() {
+            SIDES.forEach(side => {
+                $('sp_fields_' + side).innerHTML = SPECS.map(s =>
+                    `<div class="control-group"><label for="sp_${side}_${s.key}">${s.label} <span class="sp-range">[${s.min} ~ ${s.max}]</span></label>` +
+                    `<input type="number" id="sp_${side}_${s.key}" step="${s.step}" min="${s.min}" max="${s.max}" value="${fmtVal(s, DEFAULTS[side][s.key])}" data-last="${DEFAULTS[side][s.key]}"></div>`
+                ).join('');
+                SPECS.forEach(s => {
+                    const e = el(side, s.key);
+                    e.addEventListener('change', () => { setVal(side, s.key, getVal(side, s.key)); updateDerived(); });
+                });
+            });
+            updateDerived();
+        }
+        function updateDerived() {
+            SIDES.forEach(side => {
+                const P = readP(side), d = Core.derived(P);
+                const ok = d.cdEq >= 0.55 && d.cdEq <= 0.95;
+                const box = $('sp_derived_' + side);
+                box.className = 'sp-derived ' + (ok ? 'ok' : 'err');
+                box.textContent =
+                    `Cd_eq = ${d.cdEq.toFixed(2)}  ${ok ? 'OK' : '[!] 请核对 孔径 / 孔数 / Q100 是否自洽'}\n` +
+                    `锥角 Cone = ${d.cone.toFixed(1)}°   |   sin(θ) = ${d.hf.toFixed(3)} · cos(θ) = ${d.vf.toFixed(3)}\n` +
+                    `喷射时长 = ${d.durMs.toFixed(2)} ms（${d.maxInjSteps} 步）\n` +
+                    `单孔流量 = ${d.singleFlow.toFixed(2)} ml/s @ ${P.inj_pressure_bar.toFixed(0)} bar`;
+            });
+        }
+        function restoreDefaults() {
+            SIDES.forEach(side => SPECS.forEach(s => setVal(side, s.key, DEFAULTS[side][s.key], true)));
+            updateDerived();
+        }
+        function copyCase(from, to) {
+            SPECS.forEach(s => setVal(to, s.key, getVal(from, s.key), true));
+            updateDerived();
+        }
+
+        // ---------- 基准值带入 ----------
+        function currentBase() {
+            try {
+                const b = readBase();
+                if (!baseIsValid(b)) return null;
+                const q = calculateQhyd(b.M2, b.M3, b.M4, b.M5, b.B3, b.E3);
+                if (!isFinite(q)) return null;
+                return { q, rpm: b.M4, dur: b.B3, pinj: b.E3 };
+            } catch (e) { return null; }
+        }
+        function refreshBase() {
+            const b = currentBase();
+            const box = $('sp_base');
+            if (!box) return;
+            const item = (k, v, u) => `<div class="sp-base-item"><div class="k">${k}</div><div class="v">${v}<span class="u">${u}</span></div></div>`;
+            box.innerHTML = b
+                ? item('Qhyd → Q100', b.q.toFixed(2), 'cm³/100bar/30s') + item('转速 → RPM', b.rpm.toFixed(0), 'rpm') +
+                  item('持续期 → Inj Dur', b.dur.toFixed(1), '°CA') + item('轨压 → P_inj', b.pinj.toFixed(0), 'bar')
+                : '<div class="sp-base-item"><div class="k">基准参数无效</div><div class="v">—</div></div>';
+        }
+        function showNotice(id, html, kind) {
+            const n = $(id); if (!n) return;
+            n.className = 'notice ' + kind; n.innerHTML = html; n.style.display = html ? 'block' : 'none';
+        }
+        function importBase(which) {
+            const b = currentBase();
+            if (!b) { showNotice('sp_import_status', '❌ 流量计算页的基准参数无效，无法带入，请先在“流量计算”页检查输入。', 'err'); return; }
+            const sides = which === 'AB' ? ['A', 'B'] : [which];
+            const notes = [];
+            const put = (key, val, name, unit) => {
+                const spec = specOf(key), c = clamp(val, spec.min, spec.max);
+                if (c !== val) notes.push(`${name} = ${val.toFixed(spec.dec)}${unit} 超出范围，已截为 ${c}`);
+                sides.forEach(s => setVal(s, key, c, true));
+            };
+            put('flow', b.q, 'Q100', ' ml/30s'); put('rpm', b.rpm, 'RPM', ''); put('dur', b.dur, 'Inj Dur', ' °CA'); put('pinj', b.pinj, 'P_inj', ' bar');
+            updateDerived();
+            const who = sides.map(s => 'Case ' + s).join(' 和 ');
+            showNotice('sp_import_status',
+                `✅ 已带入 ${who}：Q100 = ${getVal(sides[0], 'flow')} ml/30s，RPM = ${getVal(sides[0], 'rpm')}，Inj Dur = ${getVal(sides[0], 'dur')} °CA，P_inj = ${getVal(sides[0], 'pinj')} bar。` +
+                (notes.length ? `<br>⚠️ ${notes.join('；')}` : '') +
+                `<br>孔径、孔数等未改动，请核对下方 Cd_eq 是否自洽。`, notes.length ? 'warn' : 'ok');
+        }
+
+        // ---------- 计算引擎（Worker 并行；失败则回退到主线程） ----------
+        const WORKER_TAIL = `
+let sim = null;
+self.onmessage = function (e) {
+  const m = e.data;
+  try {
+    if (m.cmd === 'init') { sim = new SprayCore.Sim(m.P, m.N); self.postMessage({ id: m.id, ok: 1 }); }
+    else if (m.cmd === 'reset') { sim.reset(); self.postMessage({ id: m.id, ok: 1 }); }
+    else if (m.cmd === 'step') { for (let i = 0; i < m.n; i++) sim.step(); const r = sim.snapshot(); r.id = m.id; self.postMessage(r, [r.q.buffer]); }
+  } catch (err) { self.postMessage({ id: m.id, error: String(err && err.stack || err) }); }
+};`;
+        class WorkerEngine {
+            constructor(url) {
+                this.w = new Worker(url); this.seq = 0; this.pend = new Map();
+                this.w.onmessage = (e) => {
+                    const p = this.pend.get(e.data.id); if (!p) return;
+                    this.pend.delete(e.data.id);
+                    e.data.error ? p.rej(new Error(e.data.error)) : p.res(e.data);
+                };
+                this.w.onerror = (err) => { this.pend.forEach(p => p.rej(err)); this.pend.clear(); };
+            }
+            call(msg) { return new Promise((res, rej) => { const id = ++this.seq; this.pend.set(id, { res, rej }); this.w.postMessage(Object.assign({ id }, msg)); }); }
+            terminate() { try { this.w.terminate(); } catch (e) {} }
+        }
+        class LocalEngine {
+            constructor() { this.sim = null; }
+            async call(msg) {
+                await new Promise(r => setTimeout(r, 0));
+                if (msg.cmd === 'init') { this.sim = new Core.Sim(msg.P, msg.N); return { ok: 1 }; }
+                if (msg.cmd === 'reset') { this.sim.reset(); return { ok: 1 }; }
+                for (let i = 0; i < msg.n; i++) this.sim.step();
+                return this.sim.snapshot();
+            }
+            terminate() {}
+        }
+        let workerUrl = null;
+        const eachEng = (fn) => { if (S.engines) { fn(S.engines.A); fn(S.engines.B); } };
+        function makeEngines() {
+            eachEng(e => e.terminate());
+            try {
+                if (!workerUrl) {
+                    const src = $('spray_core_src').textContent + WORKER_TAIL;
+                    workerUrl = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+                }
+                S.engines = { A: new WorkerEngine(workerUrl), B: new WorkerEngine(workerUrl) };
+                S.localMode = false;
+            } catch (e) {
+                S.engines = { A: new LocalEngine(), B: new LocalEngine() }; S.localMode = true;
+            }
+        }
+        async function initEngines() {
+            const doInit = () => Promise.all(SIDES.map(s => S.engines[s].call({ cmd: 'init', P: S.P[s], N: S.N })));
+            if (!S.engines) makeEngines();
+            try {
+                await Promise.race([doInit(), new Promise((_, rej) => setTimeout(() => rej(new Error('worker timeout')), 4000))]);
+            } catch (e) {
+                eachEng(x => x.terminate());
+                S.engines = { A: new LocalEngine(), B: new LocalEngine() };
+                S.localMode = true;
+                await doInit();
+            }
+        }
+
+        // ---------- 绘图 ----------
+        const LUT = {};
+        SIDES.forEach(side => {
+            const t = TINT[side], lut = new Uint8ClampedArray(256 * 4);
+            for (let q = 0; q < 256; q++) {
+                const g = q / 255, norm = g * g;
+                const inten = Math.pow(norm, 0.55), shade = 0.55 + 0.45 * norm;
+                lut[q * 4] = 255 * Math.min(1, t[0] * shade); lut[q * 4 + 1] = 255 * Math.min(1, t[1] * shade);
+                lut[q * 4 + 2] = 255 * Math.min(1, t[2] * shade); lut[q * 4 + 3] = 255 * Math.min(0.95, inten * 0.95);
+            }
+            LUT[side] = lut;
+        });
+        const fuelCv = {};
+        function fuelCanvas(side, N) {
+            let c = fuelCv[side];
+            if (!c || c.width !== N) { c = document.createElement('canvas'); c.width = c.height = N; fuelCv[side] = c; }
+            return c;
+        }
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+        }
+
+        /** 绘制俯视图（Top X-Y 平面） */
+        function drawTopPlot(ctx, ox, oy, size, side, frame) {
+            const N = S.recordedGrid, k = size / FIELD_MM, f = size / 640;
+            const cx = ox + size / 2, cy = oy + size / 2;
+            ctx.save();
+            ctx.beginPath(); ctx.rect(ox, oy, size, size); ctx.clip();
+            ctx.fillStyle = '#05090c'; ctx.fillRect(ox, oy, size, size);
+
+            const fc = fuelCanvas(side, N), fctx = fc.getContext('2d');
+            const img = fctx.createImageData(N, N), d = img.data, lut = LUT[side], q = frame.q;
+            for (let r = 0; r < N; r++) {
+                let src = (N - 1 - r) * N, dst = r * N * 4;
+                for (let i = 0; i < N; i++, src++, dst += 4) {
+                    const v = q[src] * 4; d[dst] = lut[v]; d[dst + 1] = lut[v + 1]; d[dst + 2] = lut[v + 2]; d[dst + 3] = lut[v + 3];
+                }
+            }
+            fctx.putImageData(img, 0, 0);
+            ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(fc, ox, oy, size, size);
+
+            ctx.strokeStyle = 'rgba(148,163,184,0.16)'; ctx.lineWidth = 1;
+            ctx.fillStyle = '#94a3b8'; ctx.font = `${Math.round(11 * f)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            for (let m = -20; m <= 20; m += 10) {
+                const x = cx + m * k, y = cy - m * k;
+                ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + size); ctx.moveTo(ox, y); ctx.lineTo(ox + size, y); ctx.stroke();
+                ctx.fillText(String(m), x, oy + size - 3 * f);
+            }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            for (let m = -20; m <= 20; m += 10) if (m !== 0) ctx.fillText(String(m), ox + 4 * f, cy - m * k - 7 * f);
+
+            ctx.setLineDash([2 * f, 4 * f]); ctx.strokeStyle = '#475569';
+            ctx.beginPath(); ctx.arc(cx, cy, (FIELD_MM / 2 - 0.3) * k, 0, 2 * Math.PI); ctx.stroke();
+            const ang = S.angles[side], pens = frame.pens, tips = frame.tips, acc = ACCENT[side];
+            ctx.setLineDash([6 * f, 5 * f]); ctx.strokeStyle = acc; ctx.globalAlpha = 0.6; ctx.lineWidth = 1.2 * f;
+            for (let h = 0; h < ang.length; h++) {
+                const dx = Math.cos(ang[h]), dy = -Math.sin(ang[h]);
+                ctx.beginPath(); ctx.moveTo(cx + 0.8 * k * dx, cy + 0.8 * k * dy); ctx.lineTo(cx + 23.5 * k * dx, cy + 23.5 * k * dy); ctx.stroke();
+            }
+            ctx.globalAlpha = 1; ctx.setLineDash([]);
+            ctx.fillStyle = '#64748b'; ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.2 * f;
+            ctx.beginPath(); ctx.arc(cx, cy, 0.6 * k, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+
+            ctx.font = `bold ${Math.round(19 * f)}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ff4b4b';
+            for (let h = 0; h < ang.length; h++) {
+                ctx.fillText(String(h + 1), cx + 3.4 * k * Math.cos(ang[h]), cy - 3.4 * k * Math.sin(ang[h]));
+            }
+            ctx.font = `bold ${Math.round(12 * f)}px sans-serif`;
+            for (let h = 0; h < ang.length; h++) {
+                if (!(pens[h] > 0.3)) continue;
+                const tx = cx + tips[2 * h] * k, ty = cy - tips[2 * h + 1] * k;
+                ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(tx, ty, 3.6 * f, 0, 2 * Math.PI); ctx.fill();
+                const r = Math.hypot(tips[2 * h], tips[2 * h + 1]) + 2.4;
+                const text = pens[h].toFixed(1), w = ctx.measureText(text).width + 10 * f, hh = 18 * f, pd = 3 * f;
+                const lx = clamp(cx + r * k * Math.cos(ang[h]), ox + w / 2 + pd, ox + size - w / 2 - pd);
+                const ly = clamp(cy - r * k * Math.sin(ang[h]), oy + hh / 2 + pd, oy + size - hh / 2 - pd);
+                roundRect(ctx, lx - w / 2, ly - hh / 2, w, hh, 4 * f);
+                ctx.fillStyle = 'rgba(15,23,42,0.88)'; ctx.fill(); ctx.strokeStyle = acc; ctx.lineWidth = 1 * f; ctx.stroke();
+                ctx.fillStyle = '#f8fafc'; ctx.fillText(text, lx, ly + 0.5 * f);
+            }
+            ctx.restore();
+        }
+
+        // 柔边圆形雾化粒子精灵（按 A/B 色调缓存），用 drawImage 批量绘制以保证性能
+        const plumeSprites = {};
+        function plumeSprite(side) {
+            if (plumeSprites[side]) return plumeSprites[side];
+            const t = TINT[side], c = document.createElement('canvas'); c.width = c.height = 64;
+            const g = c.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+            const col = `${Math.round(t[0] * 255)},${Math.round(t[1] * 255)},${Math.round(t[2] * 255)}`;
+            gr.addColorStop(0, `rgba(${col},1)`); gr.addColorStop(0.35, `rgba(${col},0.55)`);
+            gr.addColorStop(0.7, `rgba(${col},0.16)`); gr.addColorStop(1, `rgba(${col},0)`);
+            g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+            return (plumeSprites[side] = c);
+        }
+
+        /** 绘制正视图（Front X-Z 平面）：以顶部中心油嘴为原点向下喷射，X ∈ [-24, +24] mm, Z ∈ [0, 36] mm */
+        function drawFrontPlot(ctx, ox, oy, size, side, frame) {
+            // 防御性绘图：任何无效尺寸/输入都不能传入 Canvas 渐变坐标
+            if (!Number.isFinite(size) || size <= 0) return;
+            const P = S.P[side] || {}, dp = S.dp[side] || {}, ang = S.angles[side] || [];
+            const pens = frame && frame.pens ? frame.pens : [];
+            const acc = ACCENT[side], tint = TINT[side];
+            const f = size / 640;
+            const vertAngle = Number.isFinite(Number(P.vert_angle_deg)) ? Number(P.vert_angle_deg) : 75;
+            const coneDeg = Number.isFinite(Number(dp.cone)) ? Number(dp.cone) : 24;
+            const diameterMM = Number.isFinite(Number(P.diameter_mm)) ? Number(P.diameter_mm) : 0.135;
+
+            // 正视图空间标尺：X 宽 48 mm (-24..+24)，Z 纵深 36 mm (-4..+32 mm，顶部留 4mm 显示油嘴本体)
+            const elevDeg = clamp(Number.isFinite(Number(S.frontElev)) ? Number(S.frontElev) : 30, 0, 70);
+            const cosE = Math.cos(elevDeg * Math.PI / 180), sinE = Math.sin(elevDeg * Math.PI / 180);
+            // 斜视（俯仰）投影：从前上方观察，后侧油束上移、前侧油束下移，环形布局展开为椭圆，各束互不重叠
+            const Z_TOP = -(4.5 + 22 * sinE), Z_SPAN = 36, Z_BOT = Z_TOP + Z_SPAN;
+            const kx = size / FIELD_MM;
+            const kz = size / Z_SPAN;
+            const cx = ox + size / 2;
+            const nozzleY = oy + (-Z_TOP) * kz;
+
+            ctx.save();
+            ctx.beginPath(); ctx.rect(ox, oy, size, size); ctx.clip();
+            ctx.fillStyle = '#05090c'; ctx.fillRect(ox, oy, size, size);
+
+            // 背景网格线与刻度 (X: -20..20 mm, Z: 0..30 mm)
+            ctx.strokeStyle = 'rgba(148,163,184,0.16)'; ctx.lineWidth = 1;
+            ctx.fillStyle = '#94a3b8'; ctx.font = `${Math.round(11 * f)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            for (let xm = -20; xm <= 20; xm += 10) {
+                const x = cx + xm * kx;
+                ctx.beginPath(); ctx.moveTo(x, oy); ctx.lineTo(x, oy + size); ctx.stroke();
+                ctx.fillText(String(xm), x, oy + size - 3 * f);
+            }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+            for (let zm = 0; zm <= 30; zm += 5) {
+                const y = nozzleY + zm * kz * cosE;
+                ctx.beginPath(); ctx.moveTo(ox, y); ctx.lineTo(ox + size, y); ctx.stroke();
+                ctx.fillText(zm === 0 ? '0' : `${zm}mm`, ox + 5 * f, y - 6 * f);
+            }
+
+            // 油嘴头部结构示意（顶部中心圆柱针阀体 + 锥形头部）
+            const bodyW = 14 * f, bodyH = Math.max(10 * f, nozzleY - oy - 4 * f);
+            const gradNoz = ctx.createLinearGradient(cx - bodyW, 0, cx + bodyW, 0);
+            gradNoz.addColorStop(0, '#334155');
+            gradNoz.addColorStop(0.5, '#94a3b8');
+            gradNoz.addColorStop(1, '#334155');
+            ctx.fillStyle = gradNoz;
+            ctx.fillRect(cx - bodyW * 0.65, oy, bodyW * 1.3, bodyH);
+            ctx.beginPath();
+            ctx.moveTo(cx - bodyW * 0.65, oy + bodyH);
+            ctx.lineTo(cx + bodyW * 0.65, oy + bodyH);
+            ctx.lineTo(cx + 3.2 * f, nozzleY + 2 * f);
+            ctx.lineTo(cx - 3.2 * f, nozzleY + 2 * f);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1 * f; ctx.stroke();
+
+            // 计算各孔 3D 射流方向并按景深 Y_depth 排序（背面油束先画，正面油束后画形成立体遮挡）
+            const sinV = Math.sin(vertAngle * Math.PI / 180);
+            const cosV = Math.cos(vertAngle * Math.PI / 180);
+            const halfConeRad = (0.5 * coneDeg) * Math.PI / 180;
+            const isInjecting = frame.step < dp.maxInjSteps;
+            const postSteps = Math.max(0, frame.step - dp.maxInjSteps);
+            // 喷射结束后油束尾部脱离喷嘴的漂移距离 (mm)
+            const tailOffsetMM = isInjecting ? 0 : Math.min(postSteps * 0.16 * dp.pScale, 12.0);
+
+            const jets = [];
+            for (let h = 0; h < ang.length; h++) {
+                const az = Number.isFinite(Number(ang[h])) ? Number(ang[h]) : 0;
+                const rawPen = Number(pens[h]);
+                const penHoriz = Number.isFinite(rawPen) ? Math.max(0, rawPen) : 0; // 俯视投影贯距 (mm)
+                const len3D = penHoriz / Math.max(Math.abs(sinV), 0.12);
+                const dirX = Math.cos(az) * sinV;
+                const dirY_depth = Math.sin(az) * sinV; // >0 为前侧，<0 为后侧
+                const dirZ = cosV; // >0 向下，<0 向上
+                const dirS = dirZ * cosE + dirY_depth * sinE; // 屏幕竖向分量（向下为正）
+                jets.push({ h, az, penHoriz, len3D, dirX, dirY_depth, dirZ, dirS });
+            }
+            jets.sort((a, b) => a.dirY_depth - b.dirY_depth);
+
+            const rCol = Math.round(tint[0] * 255);
+            const gCol = Math.round(tint[1] * 255);
+            const bCol = Math.round(tint[2] * 255);
+
+            // 1) 绘制各孔中心轴线（虚线）
+            ctx.save();
+            ctx.setLineDash([5 * f, 4 * f]);
+            ctx.strokeStyle = acc;
+            ctx.globalAlpha = 0.45;
+            ctx.lineWidth = 1.1 * f;
+            jets.forEach(j => {
+                const maxGuide = 26.0;
+                const ex = cx + j.dirX * maxGuide * kx;
+                const ez = nozzleY + j.dirS * maxGuide * kz;
+                ctx.beginPath();
+                ctx.moveTo(cx, nozzleY);
+                ctx.lineTo(ex, ez);
+                ctx.stroke();
+            });
+            ctx.restore();
+
+            // 2) 基于俯视图实测浓度场生成正视图羽流：沿每孔射线采样 轴向峰值浓度 + 横向半宽，
+            //    因此俯视图中的外层雾化云、头部涡团、断裂/脱离等形态会同步体现在正视图中
+            const sprite = plumeSprite(side);
+            const rnd0 = (seed) => {
+                let a = seed >>> 0;
+                return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+            };
+            const gauss = (r) => (r() + r() + r() + r() - 2) * 1.7;
+            const qArr = frame && frame.q, qN = S.recordedGrid, cellMM = FIELD_MM / qN, qc = (qN - 1) / 2;
+            const dens = (xm, ym) => {
+                if (!qArr) return 0;
+                const i = Math.round(qc + xm / cellMM), jj = Math.round(qc + ym / cellMM);
+                if (i < 0 || jj < 0 || i >= qN || jj >= qN) return 0;
+                const v = qArr[jj * qN + i] / 255; return v * v;
+            };
+            const sampleProfile = (az, penMM) => {
+                const dx = Math.cos(az), dy = Math.sin(az), px = -dy, py = dx, out = [];
+                const rMax = Math.min(penMM + 3.0, 23.0);
+                for (let r = 0.8; r <= rMax; r += 0.4) {
+                    let peak = 0;
+                    for (let o = -8; o <= 8; o += 0.4) { const d = dens(r * dx + o * px, r * dy + o * py); if (d > peak) peak = d; }
+                    if (peak < 0.02) { out.push({ r, peak: 0, hw: 0 }); continue; }
+                    let lo = 0, hi = 0;
+                    for (let o = 0; o <= 8; o += 0.4) {
+                        if (dens(r * dx + o * px, r * dy + o * py) >= peak * 0.2) hi = o;
+                        if (dens(r * dx - o * px, r * dy - o * py) >= peak * 0.2) lo = o;
+                    }
+                    out.push({ r, peak: Math.min(peak / 0.7, 1.2), hw: Math.max(0.45, (lo + hi) / 2) });
+                }
+                return out;
+            };
+            const blob = (x, y, rad, a) => {
+                if (!(rad > 0.3) || !(a > 0.002) || !Number.isFinite(x + y + rad)) return;
+                ctx.globalAlpha = a > 1 ? 1 : a;
+                ctx.drawImage(sprite, x - rad, y - rad, rad * 2, rad * 2);
+            };
+            ctx.save();
+            ctx.globalCompositeOperation = 'source-over'; // 普通叠放：前侧油束遮挡后侧，避免加色混合把多束叠成一团白光
+            ctx.imageSmoothingEnabled = true;
+            jets.forEach(j => {
+                if (j.penHoriz <= 0.3) return;
+                const depthAlpha = 0.62 + 0.38 * clamp(j.dirY_depth, -1, 1); // 后侧油束更暗，前侧更亮
+                const edgeL = [], edgeR = [];
+                const prof = sampleProfile(j.az, j.penHoriz);
+                if (prof.length < 2) return;
+                const rng = rnd0(j.h * 7919 + 17);
+                const ex = j.dirX * kx, ez = j.dirS * kz, el = Math.hypot(ex, ez) || 1;
+                const ux = ex / el, uz = ez / el, nx = -uz, nz = ux;
+                const sinAbs = Math.max(Math.abs(sinV), 0.12);
+                prof.forEach((pt, idx) => {
+                    if (pt.peak <= 0) return;
+                    const L = pt.r / sinAbs;
+                    const bx = cx + j.dirX * L * kx, bz = nozzleY + j.dirS * L * kz;
+                    const hwPx = Math.max(pt.hw * kx, 1.0 * f);
+                    if (pt.peak > 0.08) { edgeL.push([bx + nx * hwPx * 0.95, bz + nz * hwPx * 0.95]); edgeR.push([bx - nx * hwPx * 0.95, bz - nz * hwPx * 0.95]); }
+                    // 外层雾化云
+                    for (let b = 0; b < 4; b++) {
+                        const lat = gauss(rng) * hwPx * 0.5, ax = (rng() - 0.5) * 0.9 * kx;
+                        const x = bx + nx * lat + ux * ax, z = bz + nz * lat + uz * ax;
+                        const edge = Math.min(Math.abs(lat) / hwPx, 1.2);
+                        blob(x, z, hwPx * (0.50 + 0.30 * rng()) + 0.8 * f, 0.13 * pt.peak * (1 - 0.6 * edge) * depthAlpha);
+                    }
+                    // 高浓度液核
+                    if (pt.peak > 0.5) blob(bx, bz, Math.max(1.1 * f, hwPx * 0.32), 0.22 * Math.min(pt.peak, 1) * depthAlpha);
+                    // 外围离散雾滴
+                    if (rng() < 0.35) {
+                        const side2 = (rng() < 0.5 ? -1 : 1) * hwPx * (0.9 + 0.8 * rng());
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = `rgba(${rCol},${gCol},${bCol},${(0.18 + 0.30 * rng()) * depthAlpha})`;
+                        ctx.beginPath(); ctx.arc(bx + nx * side2, bz + nz * side2, (0.5 + 0.9 * rng()) * f, 0, 2 * Math.PI); ctx.fill();
+                    }
+                });
+                // 单束轮廓线 + 中心轴线：让每一根油束边界清晰可辨
+                if (edgeL.length > 2) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.85 * depthAlpha; ctx.strokeStyle = acc; ctx.lineWidth = 1.1 * f; ctx.setLineDash([]);
+                    [edgeL, edgeR].forEach(E => { ctx.beginPath(); E.forEach((q, i) => i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1])); ctx.stroke(); });
+                    const lt = edgeL[edgeL.length - 1], rt = edgeR[edgeR.length - 1];
+                    ctx.beginPath(); ctx.moveTo(lt[0], lt[1]); ctx.lineTo(rt[0], rt[1]); ctx.stroke();
+                    ctx.restore();
+                }
+            });
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // 3) 标注孔号（红色数字）与 3D/轴向贯距标签（防止标签重叠，按最外侧左右两束优先显示详细贯距）
+            ctx.font = `bold ${Math.round(13 * f)}px sans-serif`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            jets.forEach(j => {
+                if (j.len3D <= 0.4) return;
+                const tipX = cx + j.dirX * j.len3D * kx;
+                const tipZ = nozzleY + j.dirS * j.len3D * kz;
+                // 尖端圆点
+                ctx.fillStyle = acc;
+                ctx.beginPath(); ctx.arc(tipX, tipZ, 3.2 * f, 0, 2 * Math.PI); ctx.fill();
+
+                // 喷束中段红字孔号
+                const midX = cx + j.dirX * Math.min(j.len3D * 0.48, 8.5) * kx;
+                const midZ = nozzleY + j.dirS * Math.min(j.len3D * 0.48, 8.5) * kz;
+                ctx.fillStyle = '#ff4b4b';
+                ctx.fillText(String(j.h + 1), midX, midZ);
+            });
+
+            // 选取水平投影最左、最右（正视轮廓边缘）两束标注 3D 贯距与轴向 Z 贯距
+            if (jets.length > 0) {
+                let leftJet = jets[0], rightJet = jets[0];
+                jets.forEach(j => {
+                    if (j.dirX < leftJet.dirX) leftJet = j;
+                    if (j.dirX > rightJet.dirX) rightJet = j;
+                });
+                const edgeJets = (leftJet.h === rightJet.h) ? [leftJet] : [leftJet, rightJet];
+                ctx.font = `bold ${Math.round(11 * f)}px sans-serif`;
+                edgeJets.forEach(j => {
+                    if (j.len3D <= 0.5) return;
+                    const tipX = cx + j.dirX * j.len3D * kx;
+                    const tipZ = nozzleY + j.dirS * j.len3D * kz;
+                    const zPen = Math.abs(j.dirZ * j.len3D);
+                    const labelTxt = `#${j.h + 1} L=${j.len3D.toFixed(1)} (Z=${zPen.toFixed(1)})`;
+                    const w = ctx.measureText(labelTxt).width + 10 * f, hh = 18 * f, pd = 4 * f;
+                    const offsetX = j.dirX < 0 ? -(w * 0.35) : (w * 0.35);
+                    const lx = clamp(tipX + offsetX, ox + w / 2 + pd, ox + size - w / 2 - pd);
+                    const ly = clamp(tipZ + 12 * f, oy + hh / 2 + pd, oy + size - hh / 2 - pd);
+                    roundRect(ctx, lx - w / 2, ly - hh / 2, w, hh, 4 * f);
+                    ctx.fillStyle = 'rgba(15,23,42,0.88)'; ctx.fill();
+                    ctx.strokeStyle = acc; ctx.lineWidth = 1 * f; ctx.stroke();
+                    ctx.fillStyle = '#f8fafc'; ctx.fillText(labelTxt, lx, ly + 0.5 * f);
+                });
+            }
+
+            // 右下角夹角参数徽标
+            const angTag = `夹角 ${vertAngle.toFixed(1)}° · 锥角 ${coneDeg.toFixed(1)}°`;
+            ctx.font = `${Math.round(11 * f)}px sans-serif`;
+            const tw = ctx.measureText(angTag).width + 10 * f, th = 18 * f;
+            roundRect(ctx, ox + size - tw - 6 * f, oy + 6 * f, tw, th, 4 * f);
+            ctx.fillStyle = 'rgba(15,23,42,0.82)'; ctx.fill();
+            ctx.fillStyle = '#cbd5e1'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(angTag, ox + size - tw / 2 - 6 * f, oy + 6 * f + th / 2);
+
+            ctx.restore();
+        }
+
+        function infoParts(side, frame) {
+            const P = S.P[side], d = S.dp[side], p = Array.from(frame.pens || []).map(v => Number.isFinite(Number(v)) ? Number(v) : 0);
+            const mean = p.reduce((a, b) => a + b, 0) / p.length, mn = Math.min(...p), mx = Math.max(...p);
+            const len3DMean = mean / d.hf;
+            const zMean = len3DMean * Math.abs(d.vf);
+            const inj = frame.step < d.maxInjSteps;
+            const cdBad = !(d.cdEq >= 0.55 && d.cdEq <= 0.95);
+            const l1 = `俯视均值 ${mean.toFixed(2)} (最大 ${mx.toFixed(2)}) · 3D贯距 ${len3DMean.toFixed(2)} · 轴向Z ${zMean.toFixed(2)} mm`;
+            const l2 = `D=${P.diameter_mm.toFixed(3)} K=${P.k_factor >= 0 ? '+' : ''}${P.k_factor.toFixed(1)} ${P.inj_pressure_bar.toFixed(0)}bar θ=${P.vert_angle_deg.toFixed(0)}° ${d.nH}H Q100=${P.flow_ml_30s_100bar.toFixed(0)} ` +
+                       `Cone=${d.cone.toFixed(1)}° ${P.inj_duration_ca.toFixed(0)}°CA(${d.durMs.toFixed(2)}ms) Cd=${d.cdEq.toFixed(2)}${cdBad ? ' [Check D/N/Q100]' : ''}`;
+            return { tag: `[${side} ${inj ? 'INJ' : 'END'}]`, l1, l2, cdBad };
+        }
+        function emptyFrame(side) {
+            const n = S.angles[side].length;
+            return { step: S.step, q: new Uint8Array(S.recordedGrid * S.recordedGrid), pens: new Float32Array(n), tips: new Float32Array(2 * n) };
+        }
+
+        // ---------- 显示 / 帧管理 ----------
+        function tNow(step) { return step * 0.25 * Core.DT; }
+        function showFrame(idx) {
+            let fr = S.frames[idx];
+            if (!fr) fr = { step: 0, A: emptyFrame('A'), B: emptyFrame('B') };
+            S.view = idx;
+            SIDES.forEach(side => {
+                const cvTop = $('sp_cv_' + side);
+                if (cvTop) drawTopPlot(cvTop.getContext('2d'), 0, 0, cvTop.width, side, fr[side]);
+                const cvFront = $('sp_cv_' + side + '_front');
+                if (cvFront) drawFrontPlot(cvFront.getContext('2d'), 0, 0, cvFront.width, side, fr[side]);
+
+                const info = infoParts(side, fr[side]);
+                $('sp_info_' + side).innerHTML =
+                    `<div><span class="tag${side}">${info.tag}</span><b>${info.l1}</b></div><div>${info.l2.replace('[Check D/N/Q100]', '<span class="warn">[Check D/N/Q100]</span>')}</div>`;
+                const frac = clamp(fr.step / Math.max(S.dp[side].maxInjSteps, 1), 0, 1);
+                $('sp_bar_' + side).style.width = (frac * 100).toFixed(1) + '%';
+                $('sp_barp_' + side).textContent = Math.round(frac * 100) + '%';
+            });
+            const n = S.frames.length, sl = $('sp_slider');
+            sl.max = Math.max(1, n); sl.value = idx + 1;
+            $('sp_frame_lbl').textContent = `${n ? idx + 1 : 0} / ${n}  ·  step ${fr.step}  ·  t = ${tNow(fr.step).toFixed(2)} ms`;
+            updateStatus();
+        }
+        function updateStatus() {
+            const st = $('sp_status');
+            const done = S.step >= parseInt($('sp_stop').value, 10);
+            let txt = 'READY', cls = '';
+            if (S.running) { txt = 'RUNNING'; cls = 's-run'; }
+            else if (S.replayTimer) { txt = 'REPLAY'; cls = 's-run'; }
+            else if (S.step > 0) { txt = done ? 'FINISHED' : 'PAUSED'; cls = 's-pause'; }
+            st.className = cls; st.textContent = `Step 2 / 2 · ${txt}`;
+            $('sp_status_sub').textContent = `仿真步 ${S.step}  ·  t = ${tNow(S.step).toFixed(2)} ms  ·  俯视 48×48 mm / 正视 48×36 mm  ·  网格 ${S.N}` + (S.localMode ? '  ·  主线程模式' : '  ·  双线程并行');
+            const run = $('sp_btn_run');
+            if (S.running) run.textContent = '⏸ 暂停';
+            else if (done) run.textContent = '已到设定步数';
+            else run.textContent = S.step > 0 ? '▶ 继续' : '▶ 开始仿真';
+            run.disabled = !S.running && done;
+            $('sp_btn_replay').textContent = S.replayTimer ? '⏸ 暂停回放' : '▶ 回放';
+        }
+        const nextFrame = () => new Promise(r => requestAnimationFrame(r));
+        function stopReplay() { if (S.replayTimer) { clearInterval(S.replayTimer); S.replayTimer = null; } }
+        function pushFrame(a, b) {
+            S.frames.push({ step: a.step, A: { q: a.q, pens: a.pens, tips: a.tips }, B: { q: b.q, pens: b.pens, tips: b.tips } });
+        }
+
+        async function runLoop() {
+            const tok = ++S.token; S.running = true; stopReplay(); updateStatus();
+            const t0 = performance.now(), s0 = S.step;
+            try {
+                while (S.running && tok === S.token && S.step < parseInt($('sp_stop').value, 10)) {
+                    const n = Math.min(parseInt($('sp_spf').value, 10) || 1, parseInt($('sp_stop').value, 10) - S.step);
+                    const [a, b] = await Promise.all([S.engines.A.call({ cmd: 'step', n }), S.engines.B.call({ cmd: 'step', n })]);
+                    if (tok !== S.token) return;
+                    S.step = a.step; pushFrame(a, b); showFrame(S.frames.length - 1);
+                    const rate = (S.step - s0) / ((performance.now() - t0) / 1000);
+                    $('sp_perf').textContent = `约 ${rate.toFixed(1)} 步/秒`;
+                    await nextFrame();
+                }
+            } catch (err) { showNotice('sp_msg', '❌ 仿真出错：' + (err && err.message || err), 'err'); }
+            if (tok === S.token) { S.running = false; updateStatus(); }
+        }
+        function toggleRun() {
+            if (S.busy) return;
+            if (S.running) { S.running = false; updateStatus(); return; }
+            showNotice('sp_msg', '', 'ok');
+            runLoop();
+        }
+        async function reset() {
+            S.busy = true; S.running = false; S.token++; stopReplay();
+            try { await Promise.all(SIDES.map(s => S.engines[s].call({ cmd: 'reset' }))); } catch (e) {}
+            S.step = 0; S.frames = []; S.busy = false; $('sp_perf').textContent = '';
+            showFrame(-1); showNotice('sp_msg', '', 'ok');
+        }
+
+        // ---------- 帧播放器 ----------
+        function haltForReview() { S.running = false; S.token++; stopReplay(); }
+        function frameGo(where) {
+            const n = S.frames.length; if (!n) return;
+            haltForReview();
+            let i = S.view < 0 ? n - 1 : S.view;
+            if (where === 'first') i = 0; else if (where === 'last') i = n - 1;
+            else if (where === 'prev') i = Math.max(0, i - 1); else if (where === 'next') i = Math.min(n - 1, i + 1);
+            showFrame(i);
+        }
+        function replayFps() { return clamp(15 * parseFloat($('sp_speed').value), 2, 60); }
+        function toggleReplay() {
+            if (S.replayTimer) { stopReplay(); updateStatus(); return; }
+            const n = S.frames.length; if (!n) return;
+            S.running = false; S.token++;
+            if (S.view >= n - 1) showFrame(0);
+            S.replayTimer = setInterval(() => {
+                if (S.view >= S.frames.length - 1) { stopReplay(); updateStatus(); return; }
+                showFrame(S.view + 1);
+            }, 1000 / replayFps());
+            updateStatus();
+        }
+
+        // ---------- 导出（支持 俯视+正视双视图 / 仅俯视 / 仅正视 的 PNG 与 MP4） ----------
+        const PAD = 22, GAP = 24, SUB_GAP = 14, HEAD = 64, INFO = 56, FOOT = 40;
+        function composeMetrics(mode) {
+            const m = mode || S.viewMode;
+            if (m === 'both') {
+                const sz = 440;
+                const colW = sz * 2 + SUB_GAP;
+                return { mode: m, sz, colW, W: PAD * 2 + colW * 2 + GAP, H: HEAD + INFO + sz + FOOT + PAD };
+            } else {
+                const sz = 620;
+                const colW = sz;
+                return { mode: m, sz, colW, W: PAD * 2 + colW * 2 + GAP, H: HEAD + INFO + sz + FOOT + PAD };
+            }
+        }
+        function drawSubLabel(ctx, text, x, y) {
+            ctx.save();
+            ctx.font = 'bold 12px sans-serif';
+            const w = ctx.measureText(text).width + 14, h = 22;
+            roundRect(ctx, x + 8, y + 8, w, h, 4);
+            ctx.fillStyle = 'rgba(15,23,42,0.85)'; ctx.fill();
+            ctx.strokeStyle = 'rgba(148,163,184,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+            ctx.fillStyle = '#f8fafc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(text, x + 8 + w / 2, y + 8 + h / 2);
+            ctx.restore();
+        }
+        function drawCompose(ctx, idx, mode) {
+            const met = composeMetrics(mode);
+            const { W, H, sz, colW } = met, m = met.mode;
+            const fr = S.frames[idx];
+            const titleMap = {
+                both: '多孔喷雾俯视（Top）与正视（Front）对比（A / B 同一时刻）',
+                top: '俯视多孔喷雾对比（Top X-Y · A / B 同一时刻）',
+                front: '正视多孔喷雾对比（Front X-Z · A / B 同一时刻）'
+            };
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#1f2d3d'; ctx.font = 'bold 22px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(titleMap[m], W / 2, 24);
+            ctx.font = '15px sans-serif'; ctx.fillStyle = '#475569';
+            ctx.fillText(`帧 ${idx + 1} / ${S.frames.length}   ·   仿真步 ${fr.step}   ·   t = ${tNow(fr.step).toFixed(2)} ms   ·   俯视 48×48 mm / 正视 48×36 mm   ·   网格 ${S.recordedGrid}`, W / 2, 48);
+
+            SIDES.forEach((side, i) => {
+                const x = PAD + i * (colW + GAP), info = infoParts(side, fr[side]);
+                ctx.textAlign = 'left'; ctx.font = 'bold 13px sans-serif'; ctx.fillStyle = ACCENT[side];
+                ctx.fillText(info.tag + ' ' + info.l1, x, HEAD + 14);
+                ctx.font = '11.5px sans-serif'; ctx.fillStyle = info.cdBad ? '#b91c1c' : '#475569';
+                ctx.fillText(info.l2, x, HEAD + 36);
+
+                const py = HEAD + INFO;
+                if (m === 'both') {
+                    drawTopPlot(ctx, x, py, sz, side, fr[side]);
+                    drawSubLabel(ctx, '俯视 Top (X-Y)', x, py);
+                    const fx = x + sz + SUB_GAP;
+                    drawFrontPlot(ctx, fx, py, sz, side, fr[side]);
+                    drawSubLabel(ctx, '正视 Front (X-Z)', fx, py);
+                } else if (m === 'top') {
+                    drawTopPlot(ctx, x, py, sz, side, fr[side]);
+                    drawSubLabel(ctx, '俯视 Top (X-Y)', x, py);
+                } else {
+                    drawFrontPlot(ctx, x, py, sz, side, fr[side]);
+                    drawSubLabel(ctx, '正视 Front (X-Z)', x, py);
+                }
+            });
+            ctx.textAlign = 'center'; ctx.font = '12px sans-serif'; ctx.fillStyle = '#64748b';
+            ctx.fillText('红色数字：孔号（顺时针）｜标签：俯视投影贯距 / 正视 3D 贯距与轴向 Z 贯距 (mm)｜Qhyd 来自流量计算页基准值', W / 2, HEAD + INFO + sz + 22);
+        }
+        function download(url, name) { const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); document.body.removeChild(a); }
+        function savePNG() {
+            if (!S.frames.length) { showNotice('sp_msg', '⚠️ 还没有帧可保存，请先开始仿真。', 'warn'); return; }
+            const idx = S.view < 0 ? S.frames.length - 1 : S.view, met = composeMetrics(S.viewMode);
+            const cv = document.createElement('canvas'); cv.width = met.W; cv.height = met.H;
+            drawCompose(cv.getContext('2d'), idx, S.viewMode);
+            const tag = S.viewMode;
+            cv.toBlob(b => { const u = URL.createObjectURL(b); download(u, `spray_${tag}_step${String(S.frames[idx].step).padStart(4, '0')}.png`); setTimeout(() => URL.revokeObjectURL(u), 4000); }, 'image/png');
+            showNotice('sp_msg', `✅ 已保存第 ${idx + 1} 帧（step ${S.frames[idx].step}）的 ${tag === 'both' ? '俯视+正视双视图' : (tag === 'front' ? '正视图' : '俯视图')} PNG。`, 'ok');
+        }
+        function pickVideoMime() {
+            if (!window.MediaRecorder || typeof MediaRecorder.isTypeSupported !== 'function') return null;
+            const candidates = [
+                { mime: 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', ext: 'mp4', outMime: 'video/mp4', isMp4: true },
+                { mime: 'video/mp4;codecs=avc1.42E01E', ext: 'mp4', outMime: 'video/mp4', isMp4: true },
+                { mime: 'video/mp4', ext: 'mp4', outMime: 'video/mp4', isMp4: true },
+                { mime: 'video/webm;codecs=vp9', ext: 'webm', outMime: 'video/webm', isMp4: false },
+                { mime: 'video/webm;codecs=vp8', ext: 'webm', outMime: 'video/webm', isMp4: false },
+                { mime: 'video/webm', ext: 'webm', outMime: 'video/webm', isMp4: false }
+            ];
+            for (const c of candidates) {
+                if (MediaRecorder.isTypeSupported(c.mime)) return c;
+            }
+            return null;
+        }
+
+        // 将 WebM 录制结果转为 H.264 MP4，供不支持原生 MP4 MediaRecorder 的浏览器使用。
+        async function transcodeWebMToMP4(webmBlob, onProgress) {
+            const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
+            const ffmpeg = new FFmpeg();
+            const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+            const toBlobURL = async (url, type) => {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`无法加载转码组件：${response.status}`);
+                return URL.createObjectURL(new Blob([await response.arrayBuffer()], { type }));
+            };
+            let coreURL = null, wasmURL = null;
+            try {
+                coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+                wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+                await ffmpeg.load({ coreURL, wasmURL });
+                if (onProgress) ffmpeg.on('progress', ({ progress }) => onProgress(Math.max(0, Math.min(100, Math.round(progress * 100)))));
+                await ffmpeg.writeFile('spray_input.webm', new Uint8Array(await webmBlob.arrayBuffer()));
+                await ffmpeg.exec([
+                    '-i', 'spray_input.webm',
+                    '-an',
+                    '-c:v', 'libx264',
+                    '-preset', 'ultrafast',
+                    '-crf', '20',
+                    '-pix_fmt', 'yuv420p',
+                    '-movflags', '+faststart',
+                    'spray_output.mp4'
+                ]);
+                const data = await ffmpeg.readFile('spray_output.mp4');
+                return new Blob([data], { type: 'video/mp4' });
+            } finally {
+                try { ffmpeg.terminate(); } catch (e) {}
+                if (coreURL) URL.revokeObjectURL(coreURL);
+                if (wasmURL) URL.revokeObjectURL(wasmURL);
+            }
+        }
+
+        async function exportMP4(targetMode) {
+            const exportMode = (!targetMode || targetMode === 'current') ? S.viewMode : targetMode; // 'current' 取当前所选视角
+            if (!S.frames.length) { showNotice('sp_msg', '⚠️ 还没有帧可导出，请先开始仿真。', 'warn'); return; }
+            if (!window.MediaRecorder) { showNotice('sp_msg', '❌ 当前浏览器不支持 MediaRecorder，无法导出视频（请使用最新版 Chrome / Edge / Safari）。', 'err'); return; }
+            const chosen = pickVideoMime();
+            if (!chosen) { showNotice('sp_msg', '❌ 当前浏览器不支持 MP4/WebM 视频编码。', 'err'); return; }
+            haltForReview();
+            const btn1 = $('sp_btn_webm'), btn2 = $('sp_btn_front_mp4');
+            if (btn1) btn1.disabled = true;
+            if (btn2) btn2.disabled = true;
+
+            const met = composeMetrics(exportMode), cv = document.createElement('canvas');
+            cv.width = met.W % 2 === 0 ? met.W : met.W + 1;
+            cv.height = met.H % 2 === 0 ? met.H : met.H + 1;
+            const ctx = cv.getContext('2d'), fps = replayFps(), n = S.frames.length;
+            const modeName = exportMode === 'both' ? '俯视+正视双视图' : (exportMode === 'front' ? '正视图' : '俯视图');
+            try {
+                const stream = cv.captureStream(0), track = stream.getVideoTracks()[0];
+                const rec = new MediaRecorder(stream, { mimeType: chosen.mime, videoBitsPerSecond: 6e6 }), chunks = [];
+                rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+                const stopped = new Promise(r => { rec.onstop = r; });
+                drawCompose(ctx, 0, exportMode); rec.start();
+                const sleep = ms => new Promise(r => setTimeout(r, ms));
+                for (let i = 0; i < n; i++) {
+                    drawCompose(ctx, i, exportMode); if (track.requestFrame) track.requestFrame();
+                    showNotice('sp_msg', `🎬 正在录制【${modeName}】… ${i + 1} / ${n}`, 'warn');
+                    await sleep(1000 / fps);
+                }
+                if (track.requestFrame) track.requestFrame();
+                await sleep(500); rec.stop(); await stopped;
+
+                const recordedBlob = new Blob(chunks, { type: chosen.outMime });
+                let finalBlob = recordedBlob, finalExt = chosen.ext, resultNote = '';
+                if (!chosen.isMp4) {
+                    try {
+                        showNotice('sp_msg', '⏳ 当前浏览器不支持原生 MP4，正在将视频转码为 H.264 MP4…（首次加载转码组件可能需要一些时间）', 'warn');
+                        finalBlob = await transcodeWebMToMP4(recordedBlob, pct => {
+                            showNotice('sp_msg', `⏳ 正在转码 MP4… ${pct}%`, 'warn');
+                        });
+                        finalExt = 'mp4';
+                        resultNote = '（WebM 已自动转码为 H.264 MP4）';
+                    } catch (convertErr) {
+                        finalBlob = recordedBlob;
+                        finalExt = 'webm';
+                        resultNote = `（MP4 转码未成功：${convertErr && convertErr.message || convertErr}；已保留 WebM 文件）`;
+                    }
+                } else {
+                    resultNote = '（浏览器原生 MP4 编码）';
+                }
+
+                const u = URL.createObjectURL(finalBlob);
+                const filename = `spray_${exportMode}_compare.${finalExt}`;
+                download(u, filename); setTimeout(() => URL.revokeObjectURL(u), 10000);
+                const success = finalExt === 'mp4';
+                showNotice('sp_msg',
+                    `${success ? '✅' : '⚠️'} 已导出 ${filename}【${modeName}】（${n} 帧，${fps.toFixed(0)} fps，${(finalBlob.size / 1048576).toFixed(1)} MB）${resultNote}。`,
+                    success ? 'ok' : 'warn');
+            } catch (err) {
+                showNotice('sp_msg', `❌ 导出失败：` + (err && err.message || err), 'err');
+            } finally {
+                if (btn1) btn1.disabled = false;
+                if (btn2) btn2.disabled = false;
+                showFrame(S.view < 0 ? n - 1 : S.view);
+            }
+        }
+        const exportWebM = exportMP4;
+
+        // ---------- 页面切换 ----------
+        function showPage(n) {
+            S.page = n;
+            $('sp_page1').style.display = n === 1 ? '' : 'none';
+            $('sp_page2').style.display = n === 2 ? '' : 'none';
+            $('sp_pill1').classList.toggle('active', n === 1); $('sp_pill2').classList.toggle('active', n === 2);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function goParams() { haltForReview(); showPage(1); refreshBase(); }
+        async function goSim() {
+            if (S.busy) return;
+            SIDES.forEach(s => SPECS.forEach(sp => setVal(s, sp.key, getVal(s, sp.key))));
+            S.busy = true; haltForReview();
+            S.N = parseInt($('sp_grid').value, 10) || 320; S.recordedGrid = S.N;
+            SIDES.forEach(s => { S.P[s] = readP(s); S.dp[s] = Core.derived(S.P[s]); S.angles[s] = Core.holeAngles(S.P[s]); });
+            showPage(2); showNotice('sp_msg', '', 'ok');
+            $('sp_status').textContent = 'Step 2 / 2 · 初始化中…';
+            S.step = 0; S.frames = []; $('sp_perf').textContent = '';
+            try { await initEngines(); } catch (err) { showNotice('sp_msg', '❌ 初始化失败：' + (err && err.message || err), 'err'); }
+            S.busy = false; showFrame(-1);
+        }
+
+        function init() {
+            buildCards(); refreshBase();
+            ['base_M2', 'base_M3', 'base_M4', 'base_M5', 'base_B3', 'base_E3'].forEach(id => $(id).addEventListener('input', refreshBase));
+            $('sp_elev').addEventListener('input', (e) => {
+                S.frontElev = parseFloat(e.target.value) || 0; $('sp_elev_lbl').textContent = S.frontElev + '°';
+                if (S.page === 2) showFrame(S.view);
+            });
+            $('sp_slider').addEventListener('input', (e) => { haltForReview(); showFrame(parseInt(e.target.value, 10) - 1); });
+            $('sp_speed').addEventListener('change', () => { if (S.replayTimer) { stopReplay(); toggleReplay(); } });
+            ['sp_stop', 'sp_spf'].forEach(id => $(id).addEventListener('change', (e) => {
+                const spec = id === 'sp_stop' ? [40, 400] : [1, 4];
+                e.target.value = clamp(Math.round(parseFloat(e.target.value) || spec[0]), spec[0], spec[1]); updateStatus();
+            }));
+            document.addEventListener('keydown', (e) => {
+                if (S.page !== 2 || $('tab_spray').style.display === 'none') return;
+                const tg = (document.activeElement && document.activeElement.tagName) || '';
+                if (/INPUT|SELECT|TEXTAREA/.test(tg)) return;
+                if (tg === 'BUTTON' && e.key === ' ') return;
+                if (e.key === ' ') { e.preventDefault(); toggleReplay(); }
+                else if (e.key === 'ArrowLeft') { e.preventDefault(); frameGo('prev'); }
+                else if (e.key === 'ArrowRight') { e.preventDefault(); frameGo('next'); }
+            });
+        }
+        init();
+
+        return { importBase, restoreDefaults, copyCase, goSim, goParams, toggleRun, reset, frameGo, toggleReplay, savePNG, exportMP4, exportWebM, setViewMode,
+                 onShow: refreshBase, _state: S };
+    })();
+</script>
+</body>
+
+<script>
+// ================= PWA 注册与安装引导 =================
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) btn.style.display = 'inline-block';
+});
+
+async function installPWA() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn && outcome === 'accepted') btn.style.display = 'none';
+}
+
+window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) btn.style.display = 'none';
+    deferredPrompt = null;
+});
+
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch((err) => {
+            console.warn('ServiceWorker 注册跳过或失败:', err);
+        });
+    });
+}
+</script>
+
+<script>
+// ================= 孔径 & 流量系数计算工具模块 =================
+window.NozzleTool = (function () {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const PARAM_LABELS = {
+        q: 'Q_hyd (cm³/30″)', pf: '燃油压力 (bar)', pb: '背压 (bar)',
+        n: '孔数 NSP', rho: 'ρ (kg/dm³)', mu: 'µ 流量系数'
+    };
+    const PALETTE = ['#2563eb','#7c3aed','#0891b2','#059669','#d97706','#dc2626','#6366f1','#0d9488','#b45309','#9333ea'];
+
+    let subTab = 0;
+    let chartStore = [];
+    let mapStore = [];
+    let mergeChartInstance = null;
+    let currentMapItem = null;
+    let currentSVG = '';
+    let currentSVGName = 'chart.svg';
+
+    function computeD(Q, pf, pb, N, rho, mu) {
+        const dP = pf - pb;
+        if (dP <= 0 || N <= 0 || rho <= 0 || mu <= 0) return null;
+        const v = Math.sqrt(2 * dP * 1e6 / rho);
+        return Math.sqrt((Q / 30) / (N * mu * (Math.PI / 4) * v)) * 10;
+    }
+
+    function calcD() {
+        const Q = parseFloat($('nz_p1_q').value);
+        const pf = parseFloat($('nz_p1_pf').value);
+        const pb = parseFloat($('nz_p1_pb').value);
+        const N = parseFloat($('nz_p1_n').value);
+        const rho = parseFloat($('nz_p1_rho').value);
+        const mu = parseFloat($('nz_p1_mu').value);
+        const d = (!isFinite(Q)||!isFinite(pf)||!isFinite(pb)||!isFinite(N)||!isFinite(rho)||!isFinite(mu))
+            ? null : computeD(Q, pf, pb, N, rho, mu);
+        $('nz_p1_result').textContent = d != null ? d.toFixed(5) : '—';
+    }
+
+    function calcMu() {
+        const Q = parseFloat($('nz_p2_q').value);
+        const pf = parseFloat($('nz_p2_pf').value);
+        const pb = parseFloat($('nz_p2_pb').value);
+        const N = parseFloat($('nz_p2_n').value);
+        const D_mm = parseFloat($('nz_p2_d').value);
+        const rho = parseFloat($('nz_p2_rho').value);
+        const dP = pf - pb;
+        if (!isFinite(Q)||!isFinite(dP)||!isFinite(N)||!isFinite(D_mm)||!isFinite(rho)||dP<=0||N<=0||D_mm<=0||rho<=0) {
+            $('nz_p2_result').textContent = '—';
+            return;
+        }
+        const v = Math.sqrt(2 * dP * 1e6 / rho);
+        const D_cm = D_mm / 10;
+        const mu = (Q / 30) / (N * (Math.PI / 4) * D_cm * D_cm * v);
+        $('nz_p2_result').textContent = mu.toFixed(6);
+    }
+
+    function switchSubTab(idx) {
+        subTab = idx;
+        $('nz_panel_d').style.display = idx === 0 ? '' : 'none';
+        $('nz_panel_mu').style.display = idx === 1 ? '' : 'none';
+        $('nz_sweep_block').style.display = idx === 0 ? '' : 'none';
+        $('nz_map_block').style.display = idx === 0 ? '' : 'none';
+        $('nz_subtab_d').className = idx === 0 ? 'btn calc-btn' : 'btn btn-ghost';
+        $('nz_subtab_mu').className = idx === 1 ? 'btn calc-btn' : 'btn btn-ghost';
+        if (idx === 0) {
+            calcD();
+            requestAnimationFrame(() => chartStore.forEach(c => c.chartInstance && c.chartInstance.resize()));
+        } else {
+            calcMu();
+        }
+    }
+
+    function getBaseParams() {
+        return {
+            q: parseFloat($('nz_p1_q').value),
+            pf: parseFloat($('nz_p1_pf').value),
+            pb: parseFloat($('nz_p1_pb').value),
+            n: parseFloat($('nz_p1_n').value),
+            rho: parseFloat($('nz_p1_rho').value),
+            mu: parseFloat($('nz_p1_mu').value)
+        };
+    }
+
+    function importFromFlowBase() {
+        const notice = $('nz_import_notice');
+        try {
+            const b = readBase();
+            if (!baseIsValid(b)) {
+                notice.className = 'notice err';
+                notice.style.display = 'block';
+                notice.innerHTML = '❌ “流量计算”页基准参数无效，请先检查输入。';
+                return;
+            }
+            const q = calculateQhyd(b.M2, b.M3, b.M4, b.M5, b.B3, b.E3);
+            if (isFinite(q)) {
+                $('nz_p1_q').value = q.toFixed(2);
+                $('nz_p2_q').value = q.toFixed(2);
+            }
+            $('nz_p1_pf').value = b.E3;
+            $('nz_p2_pf').value = b.E3;
+            $('nz_p1_n').value = b.M5;
+            $('nz_p2_n').value = b.M5;
+            calcD();
+            calcMu();
+            notice.className = 'notice ok';
+            notice.style.display = 'block';
+            notice.innerHTML = `✅ 已从“流量计算”带入 Qhyd = <b>${isFinite(q) ? q.toFixed(2) : '—'}</b>、轨压 = <b>${b.E3}</b> bar、缸数/孔数参考 = <b>${b.M5}</b>。`;
+        } catch (e) {
+            notice.className = 'notice err';
+            notice.style.display = 'block';
+            notice.innerHTML = '❌ 带入失败：' + e.message;
+        }
+    }
+
+    function sendToSpray(side) {
+        const dVal = parseFloat($('nz_p1_result').textContent);
+        const nVal = parseInt($('nz_p1_n').value, 10);
+        const qVal = parseFloat($('nz_p1_q').value);
+        const pfVal = parseFloat($('nz_p1_pf').value);
+        const notice = $('nz_import_notice');
+        if (!isFinite(dVal)) {
+            notice.className = 'notice warn';
+            notice.style.display = 'block';
+            notice.innerHTML = '⚠️ 当前孔径计算结果无效，无法填入喷雾仿真。';
+            return;
+        }
+        const setInp = (id, val) => {
+            const inp = $(id);
+            if (!inp) return;
+            inp.value = val;
+            inp.dataset.last = String(val);
+            inp.dispatchEvent(new Event('change'));
+        };
+        setInp(`sp_${side}_diam`, dVal.toFixed(3));
+        if (isFinite(nVal) && nVal >= 1 && nVal <= 12) setInp(`sp_${side}_hole`, nVal);
+        if (isFinite(qVal) && qVal >= 50 && qVal <= 1500) setInp(`sp_${side}_flow`, qVal.toFixed(0));
+        if (isFinite(pfVal) && pfVal >= 400 && pfVal <= 2200) setInp(`sp_${side}_pinj`, pfVal.toFixed(0));
+        notice.className = 'notice ok';
+        notice.style.display = 'block';
+        notice.innerHTML = `✅ 已将计算孔径 <b>${dVal.toFixed(4)} mm</b>（及孔数/流量/压力在量程内的参数）填入喷雾仿真 <b>Case ${side}</b>，可切换到“② 喷雾仿真（俯视 / 正视）”查看。`;
+    }
+
+    function runSweep() {
+        const param = $('nz_sweepParam').value;
+        const from = parseFloat($('nz_sweepFrom').value);
+        const to = parseFloat($('nz_sweepTo').value);
+        const step = Math.abs(parseFloat($('nz_sweepStep').value));
+        if (!isFinite(from)||!isFinite(to)||!isFinite(step)||step<=0||from>=to) {
+            alert('请检查扫描范围与步长设置（起始 < 终止，步长 > 0）');
+            return;
+        }
+        const base = getBaseParams();
+        const xs = [], ys = [];
+        const count = Math.floor((to - from) / step + 1e-9) + 1;
+        for (let i = 0; i < count; i++) {
+            const x = Math.round((from + i * step) * 1e8) / 1e8;
+            const p = Object.assign({}, base);
+            p[param] = x;
+            const d = computeD(p.q, p.pf, p.pb, p.n, p.rho, p.mu);
+            if (d != null && isFinite(d)) {
+                xs.push(+x.toFixed(6));
+                ys.push(+d.toFixed(6));
+            }
+        }
+        if (!xs.length) {
+            alert('扫描范围内无有效计算结果，请检查参数设置');
+            return;
+        }
+        const color = PALETTE[chartStore.length % PALETTE.length];
+        const fixedDesc = Object.entries(base)
+            .filter(([k]) => k !== param)
+            .map(([k, v]) => PARAM_LABELS[k].split(' ')[0] + '=' + v)
+            .join(', ');
+        chartStore.push({
+            id: Date.now() + Math.random(),
+            param, color, xs, ys,
+            label: PARAM_LABELS[param],
+            fixedDesc,
+            base: Object.assign({}, base),
+            selected: false,
+            chartInstance: null
+        });
+        renderChartList();
+    }
+
+    function renderChartList() {
+        const list = $('nz_chartList');
+        list.innerHTML = '';
+        chartStore.forEach((item, idx) => {
+            const card = document.createElement('div');
+            card.className = 'saved-card';
+            if (item.selected) card.style.borderColor = '#3498db';
+            card.innerHTML = `
+                <div class="card-top">
+                    <div class="param-badge" style="border-left-color:${item.color};">
+                        <strong style="color:var(--title);">D vs ${esc(item.label)}</strong><br>
+                        <span>固定：${esc(item.fixedDesc)}</span>
+                    </div>
+                    <label class="checkbox-container">
+                        <input type="checkbox" ${item.selected ? 'checked' : ''} onchange="NozzleTool.toggleSelect(${idx})"> 对比
+                    </label>
+                </div>
+                <div class="saved-chart-box" style="height:210px;">
+                    <canvas id="nz_cvs_${idx}"></canvas>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px;">
+                    <button class="btn export-btn" style="padding:4px 10px; font-size:11px;" onclick="NozzleTool.saveChartSVG(${idx})">⬇ 导出 SVG</button>
+                    <button class="btn clear-btn" style="padding:4px 10px; font-size:11px;" onclick="NozzleTool.deleteChart(${idx})">删除</button>
+                </div>`;
+            list.appendChild(card);
+            const ctx = $('nz_cvs_' + idx).getContext('2d');
+            if (item.chartInstance) item.chartInstance.destroy();
+            item.chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: item.xs,
+                    datasets: [{
+                        label: 'D (mm)',
+                        data: item.ys,
+                        borderColor: item.color,
+                        backgroundColor: item.color + '22',
+                        borderWidth: 2,
+                        pointRadius: item.xs.length > 50 ? 0 : 2,
+                        tension: 0.25,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { title: { display: true, text: item.label, color: '#8fa3bf', font: { size: 11 } }, ticks: { color: '#8fa3bf', maxTicksLimit: 7 } },
+                        y: { title: { display: true, text: 'D (mm)', color: '#8fa3bf', font: { size: 11 } }, ticks: { color: '#8fa3bf' } }
+                    }
+                }
+            });
+        });
+        updateMergeBar();
+    }
+
+    function toggleSelect(idx) {
+        chartStore[idx].selected = !chartStore[idx].selected;
+        updateMergeBar();
+    }
+
+    function deleteChart(idx) {
+        if (chartStore[idx] && chartStore[idx].chartInstance) chartStore[idx].chartInstance.destroy();
+        chartStore.splice(idx, 1);
+        renderChartList();
+    }
+
+    function updateMergeBar() {
+        const selCount = chartStore.filter(c => c.selected).length;
+        $('nz_mergeCount').textContent = selCount;
+        $('nz_mergeBtn').style.display = selCount >= 2 ? '' : 'none';
+    }
+
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function openModal(title, bodyHtml, footerHtml) {
+        $('nz_modal_title').textContent = title;
+        $('nz_modal_body').innerHTML = bodyHtml;
+        $('nz_modal_footer').innerHTML = footerHtml;
+        $('nz_modal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        if (mergeChartInstance) { mergeChartInstance.destroy(); mergeChartInstance = null; }
+        $('nz_modal').style.display = 'none';
+        $('nz_modal_body').innerHTML = '';
+    }
+
+    function openMergeModal() {
+        const sel = chartStore.filter(c => c.selected);
+        if (sel.length < 2) return;
+        const sameParam = sel.every(c => c.param === sel[0].param);
+        openModal(
+            '📊 多图合并对比',
+            '<div style="height:340px;"><canvas id="nz_mergedCanvas"></canvas></div>',
+            '<button class="btn btn-ghost" onclick="NozzleTool.closeModal()">关闭</button>' +
+            '<button class="btn calc-btn" onclick="NozzleTool.saveMergedSVG()">⬇ 导出合并 SVG</button>'
+        );
+        requestAnimationFrame(() => {
+            const ctx = $('nz_mergedCanvas').getContext('2d');
+            mergeChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: sel.map(item => ({
+                        label: 'D vs ' + item.label.split(' ')[0] + ' (' + item.fixedDesc + ')',
+                        data: item.xs.map((x, i) => ({ x, y: item.ys[i] })),
+                        borderColor: item.color,
+                        backgroundColor: item.color + '20',
+                        borderWidth: 2.2,
+                        pointRadius: item.xs.length > 50 ? 0 : 2.5,
+                        tension: 0.25,
+                        fill: false
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: { type: 'linear', title: { display: true, text: sameParam ? sel[0].label : '参数值', color: '#8fa3bf' }, ticks: { color: '#8fa3bf' } },
+                        y: { title: { display: true, text: 'D (mm)', color: '#8fa3bf' }, ticks: { color: '#8fa3bf' } }
+                    }
+                }
+            });
+        });
+    }
+
+    function buildLegendSVG(paramRows, accentColor, W) {
+        const PAD = 20, ITEM_H = 20, COLS = 2;
+        const rows = Math.ceil(paramRows.length / COLS);
+        const legendH = PAD + 16 + 8 + rows * ITEM_H + PAD;
+        const colW = Math.floor((W - 2 * PAD) / COLS);
+        let s = `<rect x="0" y="0" width="${W}" height="${legendH}" fill="#f8faff"/>`;
+        s += `<line x1="0" y1="${legendH-1}" x2="${W}" y2="${legendH-1}" stroke="#dde3f0" stroke-width="1"/>`;
+        s += `<rect x="0" y="0" width="4" height="${legendH}" fill="${accentColor||'#2563eb'}"/>`;
+        s += `<text x="${PAD+6}" y="${PAD+12}" font-family="Inter,system-ui,sans-serif" font-size="11" font-weight="700" fill="#6170a0">参数配置清单</text>`;
+        paramRows.forEach((row, i) => {
+            const col = i % COLS, rowNum = Math.floor(i / COLS);
+            const x = PAD + 6 + col * colW;
+            const y = PAD + 16 + 8 + rowNum * ITEM_H + 13;
+            const color = row.isSweep ? (accentColor || '#2563eb') : '#9aa0c0';
+            const valColor = row.isSweep ? (accentColor || '#2563eb') : '#1a2033';
+            const approxLabelW = (row.label + ':').length * 6.5;
+            s += `<text x="${x}" y="${y}" font-family="Inter,system-ui,sans-serif" font-size="10" font-weight="700" fill="${color}">${esc(row.label)}:</text>`;
+            s += `<text x="${x + approxLabelW + 5}" y="${y}" font-family="'JetBrains Mono',monospace" font-size="10" fill="${valColor}">${esc(row.value)}</text>`;
+        });
+        return { svg: s, height: legendH };
+    }
+
+    function showSVGPreview(svgContent, title, filename) {
+        currentSVG = svgContent;
+        currentSVGName = filename;
+        openModal(
+            title,
+            `<div style="background:#fff9db;color:#b58105;font-size:12px;padding:8px 12px;border-radius:6px;margin-bottom:12px;">💡 点击“下载 SVG”保存矢量图，可用浏览器、Inkscape 或 Illustrator 直接打开</div><div style="background:#fff;padding:12px;border-radius:8px;overflow:auto;">${svgContent}</div>`,
+            '<button class="btn btn-ghost" onclick="NozzleTool.closeModal()">关闭</button><button class="btn calc-btn" onclick="NozzleTool.downloadSVG()">⬇ 下载 SVG</button>'
+        );
+    }
+
+    function downloadSVG() {
+        if (!currentSVG) return;
+        const blob = new Blob([currentSVG], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = currentSVGName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function buildLineSVG(item, paramRows, accentColor, W, H) {
+        W = W || 700; H = H || 340;
+        const PAD_L = 60, PAD_R = 24, PAD_T = 24, PAD_B = 48;
+        const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+        const xs = item.xs, ys = item.ys;
+        const xMin = xs[0], xMax = xs[xs.length-1];
+        const yMin = Math.min(...ys), yMax = Math.max(...ys);
+        const yPad = (yMax - yMin) * 0.08 || 0.001;
+        const yLo = yMin - yPad, yHi = yMax + yPad;
+        const px = x => PAD_L + (x - xMin) / (xMax - xMin) * plotW;
+        const py = y => PAD_T + plotH - (y - yLo) / (yHi - yLo) * plotH;
+        const { svg: legendSVG, height: legendH } = buildLegendSVG(paramRows, accentColor, W);
+        const totalH = legendH + H, oy = legendH;
+
+        let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}"><g>${legendSVG}</g><rect x="0" y="${oy}" width="${W}" height="${H}" fill="#ffffff"/>`;
+        const xTickStep = Math.max(1, Math.floor(xs.length / Math.min(xs.length, 8)));
+        for (let xi = 0; xi < xs.length; xi += xTickStep) {
+            const x = px(xs[xi]);
+            s += `<line x1="${x}" y1="${oy+PAD_T}" x2="${x}" y2="${oy+PAD_T+plotH}" stroke="#eef0f8" stroke-width="1"/><text x="${x}" y="${oy+PAD_T+plotH+14}" font-size="10" fill="#6170a0" text-anchor="middle">${esc(xs[xi])}</text>`;
+        }
+        for (let i = 0; i <= 6; i++) {
+            const val = yLo + (yHi - yLo) * i / 6, y = py(val);
+            s += `<line x1="${PAD_L}" y1="${oy+y}" x2="${PAD_L+plotW}" y2="${oy+y}" stroke="#eef0f8" stroke-width="1"/><text x="${PAD_L-6}" y="${oy+y+4}" font-size="10" fill="#6170a0" text-anchor="end">${val.toFixed(4)}</text>`;
+        }
+        let fillPath = `M${px(xs[0])},${oy+PAD_T+plotH}` + xs.map((x,i) => ` L${px(x)},${oy+py(ys[i])}`).join('') + ` L${px(xs[xs.length-1])},${oy+PAD_T+plotH} Z`;
+        let linePath = xs.map((x,i) => (i===0?'M':'L') + px(x).toFixed(2) + ',' + (oy+py(ys[i])).toFixed(2)).join(' ');
+        s += `<path d="${fillPath}" fill="${accentColor}18"/><path d="${linePath}" fill="none" stroke="${accentColor}" stroke-width="2" stroke-linejoin="round"/>`;
+        if (xs.length <= 60) xs.forEach((x,i) => { s += `<circle cx="${px(x).toFixed(2)}" cy="${(oy+py(ys[i])).toFixed(2)}" r="3" fill="${accentColor}" stroke="#fff" stroke-width="1.5"/>`; });
+        s += `<text x="${PAD_L+plotW/2}" y="${oy+H-6}" font-size="11" fill="#6170a0" text-anchor="middle">${esc(item.label)}</text><text x="12" y="${oy+PAD_T+plotH/2}" font-size="11" fill="#6170a0" text-anchor="middle" transform="rotate(-90,12,${oy+PAD_T+plotH/2})">D (mm)</text><rect x="${PAD_L}" y="${oy+PAD_T}" width="${plotW}" height="${plotH}" fill="none" stroke="#dde3f0" stroke-width="1"/></svg>`;
+        return s;
+    }
+
+    function saveChartSVG(idx) {
+        const item = chartStore[idx];
+        const ALL = ['q','pf','pb','n','rho','mu'];
+        const rows = ALL.map(k => ({
+            label: PARAM_LABELS[k].split(' (')[0],
+            value: k === item.param ? (item.xs[0] + '→' + item.xs[item.xs.length-1]) : String(item.base[k]),
+            isSweep: k === item.param
+        }));
+        showSVGPreview(buildLineSVG(item, rows, item.color), '📉 矢量图: D vs ' + item.label.split(' ')[0], 'D_vs_' + item.param + '.svg');
+    }
+
+    function saveMergedSVG() {
+        const sel = chartStore.filter(c => c.selected);
+        if (sel.length < 2) return;
+        const W = 700, H = 360, PAD_L = 60, PAD_R = 24, PAD_T = 40, PAD_B = 52;
+        const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+        const allXs = sel.flatMap(it => it.xs), allYs = sel.flatMap(it => it.ys);
+        const xMin = Math.min(...allXs), xMax = Math.max(...allXs);
+        const yMin = Math.min(...allYs), yMax = Math.max(...allYs);
+        const yPad = (yMax - yMin) * 0.08 || 0.001, yLo = yMin - yPad, yHi = yMax + yPad;
+        const px = x => PAD_L + (x - xMin) / (xMax - xMin) * plotW;
+        const py = y => PAD_T + plotH - (y - yLo) / (yHi - yLo) * plotH;
+        const paramRows = sel.map((item, i) => ({
+            label: '曲线' + (i+1) + ' ' + PARAM_LABELS[item.param].split(' (')[0],
+            value: item.xs[0] + '→' + item.xs[item.xs.length-1] + ' (' + item.fixedDesc + ')',
+            isSweep: true
+        }));
+        const { svg: legendSVG, height: legendH } = buildLegendSVG(paramRows, '#2563eb', W);
+        const totalH = legendH + H, oy = legendH;
+        let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}"><rect x="0" y="0" width="${W}" height="${totalH}" fill="#ffffff"/><g>${legendSVG}</g>`;
+        for (let i = 0; i <= 6; i++) {
+            const val = yLo + (yHi - yLo) * i / 6, y = py(val);
+            s += `<line x1="${PAD_L}" y1="${oy+y}" x2="${PAD_L+plotW}" y2="${oy+y}" stroke="#eef0f8" stroke-width="1"/><text x="${PAD_L-6}" y="${oy+y+4}" font-size="10" fill="#6170a0" text-anchor="end">${val.toFixed(4)}</text>`;
+        }
+        for (let i = 0; i <= 8; i++) {
+            const val = xMin + (xMax - xMin) * i / 8, x = px(val);
+            s += `<line x1="${x}" y1="${oy+PAD_T}" x2="${x}" y2="${oy+PAD_T+plotH}" stroke="#eef0f8" stroke-width="1"/><text x="${x}" y="${oy+PAD_T+plotH+14}" font-size="10" fill="#6170a0" text-anchor="middle">${val.toFixed(2)}</text>`;
+        }
+        sel.forEach((item, si) => {
+            const linePath = item.xs.map((x,i) => (i===0?'M':'L') + px(x).toFixed(2)+','+(oy+py(item.ys[i])).toFixed(2)).join(' ');
+            s += `<path d="${linePath}" fill="none" stroke="${item.color}" stroke-width="2" stroke-linejoin="round"/>`;
+            const lx = PAD_L + si * 170;
+            s += `<rect x="${lx}" y="${oy+8}" width="12" height="3" rx="1" fill="${item.color}"/><text x="${lx+16}" y="${oy+16}" font-size="10" fill="#1a2033">${esc('D vs '+item.label.split(' ')[0])}</text>`;
+        });
+        s += `<rect x="${PAD_L}" y="${oy+PAD_T}" width="${plotW}" height="${plotH}" fill="none" stroke="#dde3f0" stroke-width="1"/><text x="${PAD_L+plotW/2}" y="${oy+H-6}" font-size="11" fill="#6170a0" text-anchor="middle">参数值</text><text x="12" y="${oy+PAD_T+plotH/2}" font-size="11" fill="#6170a0" text-anchor="middle" transform="rotate(-90,12,${oy+PAD_T+plotH/2})">D (mm)</text></svg>`;
+        closeModal();
+        showSVGPreview(s, '📊 多图对比矢量图', 'merged_nozzle_chart.svg');
+    }
+
+    function mapColor(t) {
+        const stops = [[0,[37,99,235]],[0.25,[6,182,212]],[0.5,[16,185,129]],[0.75,[251,191,36]],[1,[220,38,38]]];
+        let lo = stops[0], hi = stops[stops.length-1];
+        for (let i = 0; i < stops.length-1; i++) {
+            if (t >= stops[i][0] && t <= stops[i+1][0]) { lo = stops[i]; hi = stops[i+1]; break; }
+        }
+        const f = (t - lo[0]) / (hi[0] - lo[0]);
+        return [
+            Math.round(lo[1][0] + f*(hi[1][0]-lo[1][0])),
+            Math.round(lo[1][1] + f*(hi[1][1]-lo[1][1])),
+            Math.round(lo[1][2] + f*(hi[1][2]-lo[1][2]))
+        ];
+    }
+
+    function buildSweepAxis(from, to, step) {
+        const count = Math.floor((to - from) / step + 1e-9) + 1;
+        const arr = [];
+        for (let i = 0; i < count; i++) arr.push(Math.round((from + i * step) * 1e8) / 1e8);
+        return arr;
+    }
+
+    function runMapSweep() {
+        const paramX = $('nz_mapParamX').value;
+        const paramY = $('nz_mapParamY').value;
+        if (paramX === paramY) { alert('X 轴与 Y 轴参数不能相同'); return; }
+        const xFrom = parseFloat($('nz_mapXFrom').value), xTo = parseFloat($('nz_mapXTo').value), xStep = Math.abs(parseFloat($('nz_mapXStep').value));
+        const yFrom = parseFloat($('nz_mapYFrom').value), yTo = parseFloat($('nz_mapYTo').value), yStep = Math.abs(parseFloat($('nz_mapYStep').value));
+        if (!isFinite(xFrom)||!isFinite(xTo)||!isFinite(xStep)||xStep<=0||xFrom>=xTo) { alert('请检查 X 轴范围与步长设置'); return; }
+        if (!isFinite(yFrom)||!isFinite(yTo)||!isFinite(yStep)||yStep<=0||yFrom>=yTo) { alert('请检查 Y 轴范围与步长设置'); return; }
+
+        const base = getBaseParams();
+        const xs = buildSweepAxis(xFrom, xTo, xStep);
+        const ys = buildSweepAxis(yFrom, yTo, yStep);
+        const grid = ys.map(yv => xs.map(xv => {
+            const p = Object.assign({}, base);
+            p[paramX] = xv; p[paramY] = yv;
+            const d = computeD(p.q, p.pf, p.pb, p.n, p.rho, p.mu);
+            return (d != null && isFinite(d)) ? +d.toFixed(6) : null;
+        }));
+        let dMin = Infinity, dMax = -Infinity;
+        grid.forEach(row => row.forEach(v => { if (v !== null) { dMin = Math.min(dMin, v); dMax = Math.max(dMax, v); } }));
+        if (!isFinite(dMin)) { alert('扫描范围内无有效计算结果'); return; }
+        const fixedDesc = Object.entries(base).filter(([k]) => k !== paramX && k !== paramY).map(([k,v]) => PARAM_LABELS[k].split(' ')[0] + '=' + v).join(', ');
+        mapStore.push({ id: Date.now() + Math.random(), paramX, paramY, xs, ys, grid, dMin, dMax, base: Object.assign({}, base), fixedDesc });
+        renderMapList();
+    }
+
+    function renderMapList() {
+        const list = $('nz_mapList');
+        list.innerHTML = '';
+        mapStore.forEach((item, idx) => {
+            const card = document.createElement('div');
+            card.className = 'saved-card';
+            const title = 'D [ ' + PARAM_LABELS[item.paramX].split(' ')[0] + ' × ' + PARAM_LABELS[item.paramY].split(' ')[0] + ' ]';
+            card.innerHTML = `
+                <div class="card-top">
+                    <div class="param-badge" style="border-left-color:#9b59b6;">
+                        <strong style="color:var(--title);">${esc(title)}</strong><br>
+                        <span>固定：${esc(item.fixedDesc)} · D 范围：${item.dMin.toFixed(4)} ~ ${item.dMax.toFixed(4)} mm</span>
+                    </div>
+                    <div style="display:flex; gap:6px; flex-shrink:0;">
+                        <button class="btn calc-btn" style="padding:5px 10px; font-size:11px;" onclick="NozzleTool.openMapModal(${idx})">🔍 放大/导出</button>
+                        <button class="btn clear-btn" style="padding:5px 10px; font-size:11px;" onclick="NozzleTool.deleteMapChart(${idx})">删除</button>
+                    </div>
+                </div>
+                <div style="width:100%;"><canvas id="nz_mapcvs_${idx}" style="width:100%; display:block; border-radius:6px;"></canvas></div>`;
+            list.appendChild(card);
+            requestAnimationFrame(() => drawHeatmap($('nz_mapcvs_' + idx), item, false));
+        });
+    }
+
+    function deleteMapChart(idx) {
+        mapStore.splice(idx, 1);
+        renderMapList();
+    }
+
+    function drawHeatmap(canvas, item, large) {
+        if (!canvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const W0 = canvas.offsetWidth || (large ? 720 : 540);
+        const H0 = large ? 460 : 230;
+        const PAD_L = large ? 64 : 52, PAD_R = large ? 100 : 86, PAD_T = large ? 28 : 20, PAD_B = large ? 48 : 36;
+        canvas.width = W0 * dpr; canvas.height = H0 * dpr; canvas.style.height = H0 + 'px';
+        const ctx = canvas.getContext('2d');
+        ctx.scale(dpr, dpr);
+        const plotW = W0 - PAD_L - PAD_R, plotH = H0 - PAD_T - PAD_B;
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W0, H0);
+        const nx = item.xs.length, ny = item.ys.length, cellW = plotW / nx, cellH = plotH / ny;
+
+        for (let yi = 0; yi < ny; yi++) {
+            for (let xi = 0; xi < nx; xi++) {
+                const v = item.grid[yi][xi];
+                if (v === null) ctx.fillStyle = '#e5e7eb';
+                else {
+                    const t = item.dMax > item.dMin ? (v - item.dMin) / (item.dMax - item.dMin) : 0.5;
+                    const [r,g,b] = mapColor(t);
+                    ctx.fillStyle = `rgb(${r},${g},${b})`;
+                }
+                ctx.fillRect(PAD_L + xi * cellW, PAD_T + (ny - 1 - yi) * cellH, cellW + 0.5, cellH + 0.5);
+            }
+        }
+        ctx.strokeStyle = '#dde3f0'; ctx.lineWidth = 1; ctx.strokeRect(PAD_L, PAD_T, plotW, plotH);
+
+        const xTickStep = Math.max(1, Math.floor(nx / Math.min(nx, large ? 10 : 7)));
+        ctx.font = '10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        for (let xi = 0; xi < nx; xi += xTickStep) {
+            const px = PAD_L + (xi + 0.5) * cellW;
+            ctx.fillStyle = '#dde3f0'; ctx.fillRect(px, PAD_T, 1, plotH);
+            ctx.fillStyle = '#6170a0'; ctx.fillText(item.xs[xi], px, PAD_T + plotH + 4);
+        }
+        const yTickStep = Math.max(1, Math.floor(ny / Math.min(ny, large ? 10 : 6)));
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        for (let yi = 0; yi < ny; yi += yTickStep) {
+            const py = PAD_T + (ny - 1 - yi) * cellH + cellH * 0.5;
+            ctx.fillStyle = '#dde3f0'; ctx.fillRect(PAD_L, py, plotW, 1);
+            ctx.fillStyle = '#6170a0'; ctx.fillText(item.ys[yi], PAD_L - 5, py);
+        }
+
+        ctx.font = '11px sans-serif'; ctx.fillStyle = '#1a2033'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(PARAM_LABELS[item.paramX], PAD_L + plotW / 2, H0 - 4);
+        ctx.save(); ctx.translate(12, PAD_T + plotH / 2); ctx.rotate(-Math.PI / 2); ctx.textBaseline = 'top';
+        ctx.fillText(PARAM_LABELS[item.paramY], 0, 0); ctx.restore();
+
+        const cbX = PAD_L + plotW + 12, cbW = large ? 14 : 12, cbH = plotH, cbY = PAD_T;
+        const grad = ctx.createLinearGradient(0, cbY + cbH, 0, cbY);
+        [[0,'#2563eb'],[0.25,'#06b6d4'],[0.5,'#10b981'],[0.75,'#fbbf24'],[1,'#dc2626']].forEach(([p,c]) => grad.addColorStop(p,c));
+        ctx.fillStyle = grad; ctx.fillRect(cbX, cbY, cbW, cbH);
+        ctx.strokeStyle = '#dde3f0'; ctx.strokeRect(cbX, cbY, cbW, cbH);
+        ctx.font = '10px monospace'; ctx.fillStyle = '#6170a0'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        for (let i = 0; i <= 6; i++) {
+            const t = i / 6, val = item.dMin + t * (item.dMax - item.dMin), py = cbY + cbH * (1 - t);
+            ctx.fillText(val.toFixed(4), cbX + cbW + 6, py);
+        }
+
+        const labelFontSize = Math.min(cellW * 0.38, cellH * 0.42, large ? 11 : 9);
+        if (labelFontSize >= (large ? 6 : 5)) {
+            ctx.save(); ctx.beginPath(); ctx.rect(PAD_L, PAD_T, plotW, plotH); ctx.clip();
+            ctx.font = 'bold ' + labelFontSize.toFixed(1) + 'px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for (let yi = 0; yi < ny; yi++) {
+                for (let xi = 0; xi < nx; xi++) {
+                    const v = item.grid[yi][xi]; if (v === null) continue;
+                    const t = item.dMax > item.dMin ? (v - item.dMin) / (item.dMax - item.dMin) : 0.5;
+                    const [r,g,b] = mapColor(t);
+                    ctx.fillStyle = ((0.299*r + 0.587*g + 0.114*b)/255 > 0.55) ? 'rgba(0,0,0,0.82)' : 'rgba(255,255,255,0.92)';
+                    ctx.fillText(v.toFixed(v < 1 ? 4 : 3), PAD_L + (xi + 0.5) * cellW, PAD_T + (ny - 1 - yi) * cellH + cellH * 0.5);
+                }
+            }
+            ctx.restore();
+        }
+    }
+
+    function openMapModal(idx) {
+        currentMapItem = mapStore[idx];
+        const item = currentMapItem;
+        openModal(
+            '🗺 D Map — ' + PARAM_LABELS[item.paramX].split(' ')[0] + ' × ' + PARAM_LABELS[item.paramY].split(' ')[0],
+            '<canvas id="nz_mapModalCanvas" style="width:100%; display:block; border-radius:6px;"></canvas>',
+            '<button class="btn btn-ghost" onclick="NozzleTool.closeModal()">关闭</button>' +
+            '<button class="btn export-btn" onclick="NozzleTool.exportMapExcel()">⬇ 导出 Excel</button>' +
+            '<button class="btn calc-btn" onclick="NozzleTool.saveMapSVG()">⬇ 导出 SVG</button>'
+        );
+        requestAnimationFrame(() => drawHeatmap($('nz_mapModalCanvas'), item, true));
+    }
+
+    function saveMapSVG() {
+        const item = currentMapItem;
+        if (!item) return;
+        const W = 720, H = 500, PAD_L = 68, PAD_R = 100, PAD_T = 28, PAD_B = 52;
+        const plotW = W - PAD_L - PAD_R, plotH = H - PAD_T - PAD_B;
+        const nx = item.xs.length, ny = item.ys.length, cellW = plotW / nx, cellH = plotH / ny;
+        const paramRows = [
+            { label: 'X 轴', value: PARAM_LABELS[item.paramX].split(' ')[0] + ' ' + item.xs[0] + '→' + item.xs[nx-1], isSweep: true },
+            { label: 'Y 轴', value: PARAM_LABELS[item.paramY].split(' ')[0] + ' ' + item.ys[0] + '→' + item.ys[ny-1], isSweep: true },
+            ...Object.entries(item.base).filter(([k]) => k !== item.paramX && k !== item.paramY).map(([k,v]) => ({ label: PARAM_LABELS[k].split(' ')[0], value: String(v), isSweep: false }))
+        ];
+        const { svg: legendSVG, height: legendH } = buildLegendSVG(paramRows, '#7c3aed', W);
+        const totalH = legendH + H, oy = legendH, gid = 'nz_grad_' + Date.now();
+        let s = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${totalH}" viewBox="0 0 ${W} ${totalH}"><defs><linearGradient id="${gid}" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#2563eb"/><stop offset="25%" stop-color="#06b6d4"/><stop offset="50%" stop-color="#10b981"/><stop offset="75%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><rect x="0" y="0" width="${W}" height="${totalH}" fill="#ffffff"/><g>${legendSVG}</g>`;
+        for (let yi = 0; yi < ny; yi++) {
+            for (let xi = 0; xi < nx; xi++) {
+                const v = item.grid[yi][xi];
+                const t = v !== null && item.dMax > item.dMin ? (v - item.dMin) / (item.dMax - item.dMin) : 0.5;
+                const [r,g,b] = v !== null ? mapColor(t) : [229,231,235];
+                s += `<rect x="${(PAD_L+xi*cellW).toFixed(2)}" y="${(oy+PAD_T+(ny-1-yi)*cellH).toFixed(2)}" width="${(cellW+0.5).toFixed(2)}" height="${(cellH+0.5).toFixed(2)}" fill="rgb(${r},${g},${b})"/>`;
+            }
+        }
+        const cbX = PAD_L + plotW + 12, cbY = oy + PAD_T;
+        s += `<rect x="${cbX}" y="${cbY}" width="14" height="${plotH}" fill="url(#${gid})" stroke="#dde3f0"/><rect x="${PAD_L}" y="${cbY}" width="${plotW}" height="${plotH}" fill="none" stroke="#dde3f0"/><text x="${(PAD_L+plotW/2).toFixed(1)}" y="${oy+H-6}" font-size="11" fill="#1a2033" text-anchor="middle">${esc(PARAM_LABELS[item.paramX])}</text><text x="12" y="${(oy+PAD_T+plotH/2).toFixed(1)}" font-size="11" fill="#1a2033" text-anchor="middle" transform="rotate(-90,12,${(oy+PAD_T+plotH/2).toFixed(1)})">${esc(PARAM_LABELS[item.paramY])}</text></svg>`;
+        closeModal();
+        showSVGPreview(s, '🗺 Map 矢量图', `map_${item.paramX}_${item.paramY}.svg`);
+    }
+
+    function exportMapExcel() {
+        const item = currentMapItem;
+        if (!item) return;
+        if (typeof XLSX === 'undefined') { alert('Excel 导出库 XLSX 未加载'); return; }
+        const nx = item.xs.length, ny = item.ys.length;
+        const wb = XLSX.utils.book_new();
+        const mapSheet = [[PARAM_LABELS[item.paramX] + ' → / ' + PARAM_LABELS[item.paramY] + ' ↓', ...item.xs]];
+        for (let yi = ny - 1; yi >= 0; yi--) {
+            mapSheet.push([item.ys[yi], ...item.grid[yi].map(v => v !== null ? v : '')]);
+        }
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mapSheet), 'D Map 矩阵');
+        const listSheet = [[PARAM_LABELS[item.paramX], PARAM_LABELS[item.paramY], 'D (mm)']];
+        for (let yi = 0; yi < ny; yi++) for (let xi = 0; xi < nx; xi++) if (item.grid[yi][xi] !== null) listSheet.push([item.xs[xi], item.ys[yi], item.grid[yi][xi]]);
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(listSheet), 'X-Y-Z 展开表');
+        XLSX.writeFile(wb, `D_Map_${item.paramX}_${item.paramY}.xlsx`);
+    }
+
+    function onShow() {
+        calcD();
+        calcMu();
+        chartStore.forEach(c => c.chartInstance && c.chartInstance.resize());
+        mapStore.forEach((m, i) => drawHeatmap($('nz_mapcvs_' + i), m, false));
+    }
+
+    setTimeout(() => { calcD(); calcMu(); }, 0);
+
+    return { switchSubTab, calcD, calcMu, importFromFlowBase, sendToSpray, runSweep, toggleSelect, deleteChart, openMergeModal, saveChartSVG, saveMergedSVG, downloadSVG, runMapSweep, openMapModal, deleteMapChart, saveMapSVG, exportMapExcel, closeModal, onShow };
+})();
+</script>
+
+</body>
+</html>
